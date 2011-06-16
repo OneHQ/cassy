@@ -5,7 +5,7 @@ Gem::Specification.new do |s|
   s.summary = "Insert Cassy summary."
   s.authors = ["ryan@rubyx.com"]
   s.description = "An engine that provides a CAS server to the application it's included within."
-  s.files = Dir["lib/**/*"] + ["MIT-LICENSE", "Rakefile", "README.rdoc"]
+  s.files = Dir["lib/**/*"] + ["MIT-LICENSE", "Rakefile", "README.markdown"]
   s.version = "1.0.0"
   
   s.add_dependency 'crypt-isaac'
