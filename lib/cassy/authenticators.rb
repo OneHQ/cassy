@@ -3,6 +3,7 @@ module Cassy
     extend ActiveSupport::Autoload
     
     autoload :Base
+    autoload :Devise
     autoload :Test
   end
 end
