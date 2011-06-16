@@ -1,5 +1,11 @@
 module Cassy
-  def self.draw_old_routes
+  extend ActiveSupport::Autoload
+  
+  autoload :CAS
+  autoload :Utils
+  autoload :Engine
+
+  def self.draw_routes
     Rails.application.routes.draw do
       scope(:path => "cas") do
         get 'login', :to => "cassy/sessions#new"

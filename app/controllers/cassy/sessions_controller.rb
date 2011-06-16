@@ -1,6 +1,3 @@
-require 'cassy/utils'
-require 'cassy/cas'
-
 module Cassy
   class SessionsController < ApplicationController
     include Cassy::Utils
