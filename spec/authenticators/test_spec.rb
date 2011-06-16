@@ -109,7 +109,7 @@ describe Cassy::Authenticators::Test do
     end
 
     it "should have extra attributes in proper format" do
-      visit "/serviceValidate?service=#{CGI.escape(@target_service)}&ticket=#{@ticket}"
+      visit "/cas/serviceValidate?service=#{CGI.escape(@target_service)}&ticket=#{@ticket}"
 
       encoded_utf_string = "&#1070;&#1090;&#1092;" # actual string is "Ютф"
       page.body.should match("<test_utf_string>#{encoded_utf_string}</test_utf_string>")

@@ -1,11 +1,20 @@
 require 'spec_helper'
 
 describe Cassy::Authenticators::Devise do
-  before do
+  before(:all) do
     define_devise_schema
+  end
+  
+  before do
+    @valid_username = "test_user@example.com"
+    @valid_password = "password"
+    
+    User.create!(:email => @valid_username, :password => @valid_password)
+    
     @target_service = 'http://my.app.test'
     Cassy::Engine.config.configuration_file = File.dirname(__FILE__) + "/default_config.yml"
     Cassy::Engine.config.configuration[:authenticator][:class] = "Cassy::Authenticators::Devise"
+    Cassy::Engine.config.configuration[:username_label] = "Email"
   end
 
   describe "/cas/login" do
@@ -13,17 +22,17 @@ describe Cassy::Authenticators::Devise do
     it "logs in successfully with valid username and password without a target service" do
       visit "/cas/login"
 
-      fill_in 'Username', :with => VALID_USERNAME
-      fill_in 'Password', :with => VALID_PASSWORD
+      fill_in 'Email', :with => @valid_username
+      fill_in 'Password', :with => @valid_password
       click_button 'Login'
-
+      save_and_open_page
       page.should have_content("You have successfully logged in")
     end
 
     it "fails to log in with invalid password" do
       visit "/cas/login"
-      fill_in 'Username', :with => VALID_USERNAME
-      fill_in 'Password', :with => INVALID_PASSWORD
+      fill_in 'Email', :with => @valid_username
+      fill_in 'Password', :with => "not_the_password"
       click_button 'Login'
 
       page.should have_content("Incorrect username or password")
@@ -32,8 +41,8 @@ describe Cassy::Authenticators::Devise do
     it "logs in successfully with valid username and password and redirects to target service" do
       visit "/cas/login?service="+CGI.escape(@target_service)
 
-      fill_in 'username', :with => VALID_USERNAME
-      fill_in 'password', :with => VALID_PASSWORD
+      fill_in 'Email', :with => @valid_username
+      fill_in 'password', :with => @valid_password
 
       click_button 'Login'
 
@@ -43,8 +52,8 @@ describe Cassy::Authenticators::Devise do
     it "preserves target service after invalid login" do
       visit "/cas/login?service="+CGI.escape(@target_service)
 
-      fill_in 'username', :with => VALID_USERNAME
-      fill_in 'password', :with => INVALID_PASSWORD
+      fill_in 'Email', :with => @valid_username
+      fill_in 'password', :with => "not_the_password"
       click_button 'Login'
 
       page.should have_content("Incorrect username or password")
@@ -82,8 +91,8 @@ describe Cassy::Authenticators::Devise do
 
       visit "/cas/login?service="+CGI.escape(@target_service)
 
-      fill_in 'Username', :with => VALID_USERNAME
-      fill_in 'Password', :with => VALID_PASSWORD
+      fill_in 'Email', :with => @valid_username
+      fill_in 'Password', :with => @valid_password
 
       click_button 'Login'
 
@@ -92,7 +101,7 @@ describe Cassy::Authenticators::Devise do
     end
 
     it "should have extra attributes in proper format" do
-      visit "/serviceValidate?service=#{CGI.escape(@target_service)}&ticket=#{@ticket}"
+      visit "/cas/serviceValidate?service=#{CGI.escape(@target_service)}&ticket=#{@ticket}"
 
       encoded_utf_string = "&#1070;&#1090;&#1092;" # actual string is "Ютф"
       page.body.should match("<test_utf_string>#{encoded_utf_string}</test_utf_string>")
