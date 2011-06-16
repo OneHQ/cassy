@@ -201,7 +201,7 @@ module Cassy
     def validate_proxy_ticket(service, ticket)
       pt, error = validate_service_ticket(service, ticket, true)
 
-      if pt.kind_of?(Cassy::Model::ProxyTicket) && !error
+      if pt.kind_of?(Cassy::ProxyTicket) && !error
         if not pt.granted_by_pgt
           error = Error.new(:INTERNAL_ERROR, "Proxy ticket '#{pt}' belonging to user '#{pt.username}' is not associated with a proxy granting ticket.")
         elsif not pt.granted_by_pgt.service_ticket
