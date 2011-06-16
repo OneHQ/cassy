@@ -124,13 +124,6 @@ module Cassy
 
       if tgt
         Cassy::TicketGrantingTicket.transaction do
-          tgt.granted_service_tickets.each do |st|
-            send_logout_notification_for_service_ticket(st) if config[:enable_single_sign_out]
-            # TODO: Maybe we should do some special handling if send_logout_notification_for_service_ticket fails?
-            #       (the above method returns false if the POST results in a non-200 HTTP response).
-            st.destroy
-          end
-
           pgts = Cassy::ProxyGrantingTicket.find(:all,
             :conditions => [ActiveRecord::Base.connection.quote_table_name(Cassy::ServiceTicket.table_name)+".username = ?", tgt.username],
             :include => :service_ticket)
