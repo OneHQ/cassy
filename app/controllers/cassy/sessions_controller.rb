@@ -26,7 +26,7 @@ module Cassy
           if !@renew && tgt && !tgt_error
             st = generate_service_ticket(@service, tgt.username, tgt)
             service_with_ticket = service_uri_with_ticket(@service, st)
-            redirect service_with_ticket, 303 # response code 303 means "See Other" (see Appendix B in CAS Protocol spec)
+            redirect_to service_with_ticket, :status => 303 # response code 303 means "See Other" (see Appendix B in CAS Protocol spec)
           elsif @gateway
             redirect @service, 303
           end
