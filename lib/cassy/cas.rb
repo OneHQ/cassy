@@ -172,7 +172,7 @@ module Cassy
         if st.consumed?
           error = Error.new(:INVALID_TICKET, "Ticket '#{ticket}' has already been used up.")
           logger.warn "#{error.code} - #{error.message}"
-        elsif st.kind_of?(Cassy::Model::ProxyTicket) && !allow_proxy_tickets
+        elsif st.kind_of?(Cassy::ProxyTicket) && !allow_proxy_tickets
           error = Error.new(:INVALID_TICKET, "Ticket '#{ticket}' is a proxy ticket, but only service tickets are allowed here.")
           logger.warn "#{error.code} - #{error.message}"
         elsif Time.now - st.created_on > settings.config[:maximum_unused_service_ticket_lifetime]
