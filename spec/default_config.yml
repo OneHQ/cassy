@@ -4,8 +4,6 @@
 # Times are in seconds.
 maximum_unused_login_ticket_lifetime: 300
 
-quiet: true
-
 authenticator:
   class: Cassy::Authenticators::Test
   password: spec_password
@@ -13,10 +11,6 @@ authenticator:
 #custom_views: /path/to/custom/views
 
 default_locale: en
-
-log:
-  file: casserver_spec.log
-  level: DEBUG
 
 #db_log:
 #  file: casserver_spec_db.log
