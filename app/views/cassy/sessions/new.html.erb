@@ -1,6 +1,6 @@
 <%= form_tag do %>
   <p>
-    <%= label_tag :username, Cassy.config[:username_label] %>
+    <%= label_tag :username, Cassy.config[:username_label] || 'Username' %>
     <%= text_field_tag :username %>
   </p>
   
