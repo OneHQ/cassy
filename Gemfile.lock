@@ -1,8 +1,9 @@
 PATH
   remote: .
   specs:
-    cassy (0.0.1)
+    cassy (1.0.0)
       crypt-isaac
+      rails (= 3.0.7)
 
 GEM
   remote: http://rubygems.org/
@@ -128,6 +129,5 @@ DEPENDENCIES
   database_cleaner
   devise (~> 1.3)
   launchy
-  rails (= 3.0.7)
   rspec-rails (~> 2.6.0)
   sqlite3
