@@ -28,3 +28,16 @@ Create this configuration file at `config/cassy.yml`. Fill it with these values:
 The first two keys are the time-to-expiry for the login and service tickets respectively. The class for the authentication can be any constant which responds to a `validates` method. By default, only Devise authentication is supported at the moment.
 
 Boom, done. Now this application will act as a CAS server.
+
+## Configuration
+
+The configuration options for this gem go into a file, probably `config/cassy.yml` at the root of the project if you've set it up as advised, and allow the engine to be customised.
+
+These configuration options are detailed here for your convenience. For specific term definitions, please consult the CAS spec.
+
+`authenticator`: Must specify at least one key, `class`, which is a string version of a constant that will be used for authentication in the system. This constant *must* respond to `validate`.
+`maximum_unused_login_ticket_lifetime`: The time before a login ticket would expire.
+`maximum_unused_service_ticket_lifetime`: The time before a service ticket would expire.
+`username_label`: Allows for the "Username" label on the sign in page to be given a different value. Helpful if you want to call it "Email" or "User Name" instead.
+
+ 
