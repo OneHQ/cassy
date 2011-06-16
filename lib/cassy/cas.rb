@@ -175,7 +175,7 @@ module Cassy
         elsif st.kind_of?(Cassy::ProxyTicket) && !allow_proxy_tickets
           error = Error.new(:INVALID_TICKET, "Ticket '#{ticket}' is a proxy ticket, but only service tickets are allowed here.")
           logger.warn "#{error.code} - #{error.message}"
-        elsif Time.now - st.created_on > settings.config[:maximum_unused_service_ticket_lifetime]
+        elsif Time.now - st.created_on > settings[:maximum_unused_service_ticket_lifetime]
           error = Error.new(:INVALID_TICKET, "Ticket '#{ticket}' has expired.")
           logger.warn "Ticket '#{ticket}' has expired."
         elsif !st.matches_service? service
