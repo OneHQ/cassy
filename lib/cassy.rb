@@ -18,6 +18,9 @@ module Cassy
   def self.config
     Cassy::Engine.config.configuration
   end
+  
+  class AuthenticatorError < Exception
+  end
 end
 
 require 'cassy/authenticators'
