@@ -135,7 +135,7 @@ module Cassy
             st.destroy
           end
 
-          pgts = Cassy::Model::ProxyGrantingTicket.find(:all,
+          pgts = Cassy::ProxyGrantingTicket.find(:all,
             :conditions => [ActiveRecord::Base.connection.quote_table_name(Cassy::ServiceTicket.table_name)+".username = ?", tgt.username],
             :include => :service_ticket)
           pgts.each do |pgt|
