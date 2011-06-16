@@ -52,10 +52,9 @@ module Cassy
       @lt = params['lt']
 
       if error = validate_login_ticket(@lt)
-        @message = {:type => 'mistake', :message => error}
-        # generate another login ticket to allow for re-submitting the form
+        flash[:error] = error
         @lt = generate_login_ticket.ticket
-        render :new, :status => 500
+        render(:new, :status => 500) and return
       end
       
       
