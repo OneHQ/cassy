@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dummy</title>
+  <%= stylesheet_link_tag    "application" %>
+  <%= csrf_meta_tags %>
+</head>
+<body>
+  <%= flash[:notice] %>
+  <%= flash[:error] %>
+
+<%= yield %>
+
+</body>
+</html>

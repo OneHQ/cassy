@@ -1,0 +1,31 @@
+#ssl_cert: test.pem
+#uri_path: /cas
+
+# Times are in seconds.
+maximum_unused_login_ticket_lifetime: 300
+
+quiet: true
+
+authenticator:
+  class: Cassy::Authenticators::Test
+  password: spec_password
+
+#custom_views: /path/to/custom/views
+
+default_locale: en
+
+log:
+  file: casserver_spec.log
+  level: DEBUG
+
+#db_log:
+#  file: casserver_spec_db.log
+
+enable_single_sign_out: true
+
+#maximum_unused_login_ticket_lifetime: 300
+#maximum_unused_service_ticket_lifetime: 300
+
+#maximum_session_lifetime: 172800
+
+#downcase_username: true
