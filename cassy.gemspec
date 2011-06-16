@@ -3,11 +3,13 @@
 Gem::Specification.new do |s|
   s.name = "cassy"
   s.summary = "Insert Cassy summary."
-  s.description = "Insert Cassy description."
+  s.authors = ["ryan@rubyx.com"]
+  s.description = "An engine that provides a CAS server to the application it's included within."
   s.files = Dir["lib/**/*"] + ["MIT-LICENSE", "Rakefile", "README.rdoc"]
-  s.version = "0.0.1"
+  s.version = "1.0.0"
   
   s.add_dependency 'crypt-isaac'
+  s.add_dependency 'rails', '3.0.7'
   
   s.add_development_dependency 'rspec-rails', '~> 2.6.0'
   s.add_development_dependency 'capybara', '~> 1.0'
