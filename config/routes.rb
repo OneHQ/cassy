@@ -6,3 +6,4 @@
 #   
 #   get 'logout', :to => "sessions#destroy"
 # end
+Cassy.draw_routes
