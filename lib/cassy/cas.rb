@@ -2,6 +2,7 @@ require 'uri'
 require 'net/https'
 
 require 'cassy/models'
+require 'cassy/utils'
 
 # Encapsulates CAS functionality. This module is meant to be included in
 # the Cassy::Controllers module.
