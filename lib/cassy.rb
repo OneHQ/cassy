@@ -6,6 +6,8 @@ module Cassy
         post 'login', :to => "cassy/sessions#create"
         
         get 'logout', :to => "cassy/sessions#destroy"
+        
+        get 'serviceValidate', :to => "cassy/sessions#service_validate"
       end
     end
   end
