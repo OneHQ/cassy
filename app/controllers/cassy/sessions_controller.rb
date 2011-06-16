@@ -159,5 +159,29 @@ module Cassy
         render :new
       end
     end
+    
+    def service_validate
+      # required
+      @service = clean_service_url(params['service'])
+      @ticket = params['ticket']
+      # optional
+      @renew = params['renew']
+
+      st, @error = validate_service_ticket(@service, @ticket)
+      @success = st && !@error
+
+      if @success
+        @username = st.username
+        if @pgt_url
+          pgt = generate_proxy_granting_ticket(@pgt_url, st)
+          @pgtiou = pgt.iou if pgt
+        end
+        @extra_attributes = st.granted_by_tgt.extra_attributes || {}
+      end
+
+      status response_status_from_error(@error) if @error
+
+      render :proxy_validate, :layout => false
+    end
   end
 end
