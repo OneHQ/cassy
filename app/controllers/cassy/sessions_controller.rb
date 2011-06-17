@@ -168,9 +168,22 @@ module Cassy
         @extra_attributes = st.granted_by_tgt.extra_attributes || {}
       end
 
-      status response_status_from_error(@error) if @error
+      status = response_status_from_error(@error) if @error
 
-      render :proxy_validate, :layout => false
+      render :proxy_validate, :layout => false, :status => status || 200
+    end
+    
+    private
+    
+    def response_status_from_error(error)
+      case error.code.to_s
+      when /^INVALID_/, 'BAD_PGT'
+        422
+      when 'INTERNAL_ERROR'
+        500
+      else
+        500
+      end
     end
   end
 end
