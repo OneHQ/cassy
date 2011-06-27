@@ -38,6 +38,6 @@ These configuration options are detailed here for your convenience. For specific
 `authenticator`: Must specify at least one key, `class`, which is a string version of a constant that will be used for authentication in the system. This constant *must* respond to `validate`.
 `maximum_unused_login_ticket_lifetime`: The time before a login ticket would expire.
 `maximum_unused_service_ticket_lifetime`: The time before a service ticket would expire.
+`username_field`: Defines the field on the users table which is used for the lookup for the username. Defaults to "username".
 `username_label`: Allows for the "Username" label on the sign in page to be given a different value. Helpful if you want to call it "Email" or "User Name" instead.
-
  
