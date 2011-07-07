@@ -13,6 +13,10 @@ module Cassy
       # You can leave this empty if you don't need to set up anything.
       def self.setup(options)
       end
+      
+      def self.find_user(credentials)
+        raise NotImplementedError
+      end
 
       # This is called prior to #validate (i.e. each time the user tries to log in).
       # Any per-instance initialization for the authenticator should be done here.
@@ -25,6 +29,22 @@ module Cassy
         @extra_attributes = {}
       end
 
+      def self.extra_attributes
+        @extra_attributes
+      end
+      
+      def self.extra_attributes_to_extract
+        if @options[:extra_attributes].kind_of? Array
+          attrs = @options[:extra_attributes]
+        elsif @options[:extra_attributes].kind_of? String
+          attrs = @options[:extra_attributes].split(',').collect{|col| col.strip}
+        else
+          attrs = []
+        end
+
+        attrs
+      end
+
       # Override this to implement your authentication credential validation.
       # This is called each time the user tries to log in. The credentials hash
       # holds the credentials as entered by the user (generally under :username
@@ -34,10 +54,6 @@ module Cassy
       # by calling #read_standard_credentials.
       def validate(credentials)
         raise NotImplementedError, "This method must be implemented by a class extending #{self.class}"
-      end
-
-      def extra_attributes
-        @extra_attributes
       end
 
       protected

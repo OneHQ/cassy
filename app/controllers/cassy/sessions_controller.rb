@@ -64,22 +64,26 @@ module Cassy
       logger.debug("Logging in with username: #{@username}, lt: #{@lt}, service: #{@service}, auth: #{settings[:auth].inspect}")
 
       begin
+        extra_attributes = {}
         # Should probably be moved out of the request cycle and into an after init hook on the engine
         auth_settings = Cassy.config["authenticator"]
         authenticator = auth_settings["class"].constantize
         authenticator.configure(auth_settings)
 
-        credentials_are_valid = authenticator.validate(
-          :username => @username,
-          :password => @password,
-          :service => @service,
-          :request => @env
-        )
+        credentials = { :username => @username,
+                        :password => @password,
+                        :service => @service,
+                        :request => @env
+                      }
 
-        if credentials_are_valid
+        if authenticator.validate(credentials)
+          user = authenticator.find_user(credentials)
+          authenticator.extra_attributes_to_extract.each do |key|
+            extra_attributes[key] = user.send(key)
+          end
 
           # 3.6 (ticket-granting cookie)
-          tgt = generate_ticket_granting_ticket(@username)
+          tgt = generate_ticket_granting_ticket(@username, extra_attributes)
           response.set_cookie('tgt', tgt.to_s)
 
           if @service.blank?

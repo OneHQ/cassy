@@ -8,6 +8,7 @@ maximum_unused_service_ticket_lifetime: 300
 authenticator:
   class: Cassy::Authenticators::Test
   password: spec_password
+  extra_attributes: full_name
 
   
 enable_single_sign_out: true

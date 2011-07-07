@@ -10,7 +10,7 @@ describe Cassy::Authenticators::Devise do
     @valid_username = "bobbles"
     @valid_password = "password"
     
-    User.create!(:email => @valid_email, :password => @valid_password, :username => @valid_username)
+    User.create!(:email => @valid_email, :password => @valid_password, :username => @valid_username, :full_name => "Valid User")
     
     @target_service = 'http://my.app.test'
     Cassy::Engine.config.configuration_file = File.dirname(__FILE__) + "/default_config.yml"
@@ -115,11 +115,7 @@ describe Cassy::Authenticators::Devise do
 
     it "should have extra attributes in proper format" do
       visit "/cas/serviceValidate?service=#{CGI.escape(@target_service)}&ticket=#{@ticket}"
-
-      encoded_utf_string = "&#1070;&#1090;&#1092;" # actual string is "Ютф"
-      page.body.should match("<test_utf_string>#{encoded_utf_string}</test_utf_string>")
-      page.body.should match("<test_numeric>123.45</test_numeric>")
-      page.body.should match("<test_utf_string>&#1070;&#1090;&#1092;</test_utf_string>")
+      page.body.should match("<full_name>Valid User</full_name>")
     end
   end
 

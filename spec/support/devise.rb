@@ -5,6 +5,7 @@ module DeviseHelper
         t.string   "username"
         t.string   "email"
         t.string   "encrypted_password"
+        t.string   "full_name"
       end
     end
   end
