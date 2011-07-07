@@ -14,6 +14,7 @@ module Cassy
         get 'logout', :to => "cassy/sessions#destroy"
         
         get 'serviceValidate', :to => "cassy/sessions#service_validate"
+        get 'proxyValidate',   :to => "cassy/sessions#proxy_validate"
       end
     end
   end

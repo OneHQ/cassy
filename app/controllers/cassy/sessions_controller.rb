@@ -177,6 +177,42 @@ module Cassy
       render :proxy_validate, :layout => false, :status => status || 200
     end
     
+    def proxy_validate
+
+      # required
+      @service = clean_service_url(params['service'])
+      @ticket = params['ticket']
+      # optional
+      @pgt_url = params['pgtUrl']
+      @renew = params['renew']
+
+      @proxies = []
+
+      t, @error = validate_proxy_ticket(@service, @ticket)
+      @success = t && !@error
+
+      @extra_attributes = {}
+      if @success
+        @username = t.username
+
+        if t.kind_of? Cassy::ProxyTicket
+          @proxies << t.granted_by_pgt.service_ticket.service
+        end
+
+        if @pgt_url
+          pgt = generate_proxy_granting_ticket(@pgt_url, t)
+          @pgtiou = pgt.iou if pgt
+        end
+
+        @extra_attributes = t.granted_by_tgt.extra_attributes || {}
+      end
+
+      status = response_status_from_error(@error) if @error
+
+      render :proxy_validate, :layout => false, :status => status || 200
+      
+    end
+    
     private
     
     def response_status_from_error(error)

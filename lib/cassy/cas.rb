@@ -51,6 +51,7 @@ module Cassy
       tgt.extra_attributes = extra_attributes
       tgt.client_hostname = env['HTTP_X_FORWARDED_FOR'] || env['REMOTE_HOST'] || env['REMOTE_ADDR']
       tgt.save!
+      p tgt.save!
       tgt
     end
 
