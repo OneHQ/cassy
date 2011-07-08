@@ -82,18 +82,6 @@ describe Cassy::Authenticators::Test do
 
   end # describe '/logout'
 
-  # describe 'Configuration' do
-  #   it "uri_path value changes prefix of routes" do
-  #     @target_service = 'http://my.app.test'
-  # 
-  #     visit "/test/login"
-  #     page.status_code.should_not == 404
-  # 
-  #     visit "/test/logout"
-  #     page.status_code.should_not == 404
-  #   end 
-  # end
-
   describe "proxyValidate" do
     before do
 
@@ -109,12 +97,11 @@ describe Cassy::Authenticators::Test do
     end
 
     it "should have extra attributes in proper format" do
+      Cassy::Engine.config.configuration[:extra_attributes] = [{ :user => :full_name }]
       visit "/cas/serviceValidate?service=#{CGI.escape(@target_service)}&ticket=#{@ticket}"
 
-      encoded_utf_string = "&#1070;&#1090;&#1092;" # actual string is "Ютф"
-      page.body.should match("<test_utf_string>#{encoded_utf_string}</test_utf_string>")
-      page.body.should match("<test_numeric>123.45</test_numeric>")
-      page.body.should match("<test_utf_string>&#1070;&#1090;&#1092;</test_utf_string>")
+      page.body.should match("<full name>Example User</full_name>")
+      page.body.should match
     end
   end
 end
