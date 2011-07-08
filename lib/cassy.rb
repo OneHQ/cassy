@@ -8,6 +8,7 @@ module Cassy
   def self.draw_routes
     Rails.application.routes.draw do
       scope(:path => "cas") do
+        root :to => "cassy/sessions#new"
         get 'login', :to => "cassy/sessions#new"
         post 'login', :to => "cassy/sessions#create"
         
@@ -16,6 +17,8 @@ module Cassy
         get 'serviceValidate', :to => "cassy/sessions#service_validate"
         get 'proxyValidate',   :to => "cassy/sessions#proxy_validate"
       end
+      # TODO: Discover why we need to define this route separately.
+      get 'proxyValidate',   :to => "cassy/sessions#proxy_validate"
     end
   end
   
