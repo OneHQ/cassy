@@ -57,33 +57,15 @@ module Cassy
         render(:new, :status => 500) and return
       end
       
-      
       # generate another login ticket to allow for re-submitting the form after a post
       @lt = generate_login_ticket.ticket
 
       logger.debug("Logging in with username: #{@username}, lt: #{@lt}, service: #{@service}, auth: #{settings[:auth].inspect}")
 
       begin
-        extra_attributes = {}
-        # Should probably be moved out of the request cycle and into an after init hook on the engine
-        auth_settings = Cassy.config["authenticator"]
-        authenticator = auth_settings["class"].constantize
-        authenticator.configure(auth_settings)
-
-        credentials = { :username => @username,
-                        :password => @password,
-                        :service => @service,
-                        :request => @env
-                      }
-
-        if authenticator.validate(credentials)
-          user = authenticator.find_user(credentials)
-          authenticator.extra_attributes_to_extract.each do |key|
-            extra_attributes[key] = user.send(key)
-          end
-
+        if valid_credentials?
           # 3.6 (ticket-granting cookie)
-          tgt = generate_ticket_granting_ticket(@username, extra_attributes)
+          tgt = generate_ticket_granting_ticket(@username, @extra_attributes)
           response.set_cookie('tgt', tgt.to_s)
 
           if @service.blank?
@@ -224,6 +206,28 @@ module Cassy
       else
         500
       end
+    end
+
+    # Initializes authenticator, returns true / false depending on if user credentials are accurate
+    def valid_credentials?
+      @extra_attributes = {}
+      # Should probably be moved out of the request cycle and into an after init hook on the engine
+      auth_settings = Cassy.config["authenticator"]
+      @authenticator = auth_settings["class"].constantize
+      @authenticator.configure(auth_settings)
+
+      credentials = { :username => @username,
+                      :password => @password,
+                      :service => @service,
+                      :request => @env
+                    }
+
+      @user = @authenticator.find_user(credentials)
+      @authenticator.extra_attributes_to_extract.each do |attr|
+        @extra_attributes[attr] = @user.send(attr)
+      end
+
+      @authenticator.validate(credentials)
     end
   end
 end
