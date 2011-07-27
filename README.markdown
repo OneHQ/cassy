@@ -27,11 +27,21 @@ Create this configuration file at `config/cassy.yml`. Fill it with these values:
 
 The first two keys are the time-to-expiry for the login and service tickets respectively. The class for the authentication can be any constant which responds to a `validates` method. By default, only Devise authentication is supported at the moment.
 
+Next, you will need to tell Cassy to load its routes in your application which you can do by calling `cassy` in `config/routes.rb`:
+
+    Rails.application.routes.draw do
+      cassy
+      
+      # your routes go here
+    end
+
 Boom, done. Now this application will act as a CAS server.
+
+For customization options please see the "Customization" section below.
 
 ## Configuration
 
-The configuration options for this gem go into a file, probably `config/cassy.yml` at the root of the project if you've set it up as advised, and allow the engine to be customised.
+The configuration options for this gem goes into a file called `config/cassy.yml` at the root of the project if you've set it up as advised, and this allows the engine to be configured.
 
 These configuration options are detailed here for your convenience. For specific term definitions, please consult the CAS spec.
 
@@ -40,4 +50,21 @@ These configuration options are detailed here for your convenience. For specific
 `maximum_unused_service_ticket_lifetime`: The time before a service ticket would expire.
 `username_field`: Defines the field on the users table which is used for the lookup for the username. Defaults to "username".
 `username_label`: Allows for the "Username" label on the sign in page to be given a different value. Helpful if you want to call it "Email" or "User Name" instead.
+
+## Customization
+
+### Sessions Controller
+
+In Cassy, it is possible to override the controller which is used for authentication. To do this, the controller can be configured in `config/routes.rb`:
+
+    cassy :controllers => "sessions"
+
+By doing this, it will point at the `SessionsController` rather than the default of `Cassy::SessionsController`. This controller then should inherit from `Cassy::SessionsController` to inherit the original behaviour and will need to point to the views of Cassy:
+
+    class SessionsController < Cassy::SessionsController
+      def new
+        # custom behaviour goes here
+        super
+      end
+        
  
