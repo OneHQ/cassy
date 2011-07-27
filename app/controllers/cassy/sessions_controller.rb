@@ -41,15 +41,7 @@ module Cassy
     end
     
     def create
-      # 2.2
-
-      # 2.2.1 (optional)
-      @service = clean_service_url(params['service'])
-
-      # 2.2.2 (required)
-      @username = params[:username].strip
-      @password = params[:password]
-      @lt = params['lt']
+      setup_from_params!
 
       if error = validate_login_ticket(@lt)
         flash[:error] = error
@@ -82,8 +74,7 @@ module Cassy
             end
           end
         else
-          flash[:error] = "Incorrect username or password."
-          render :new, :status => 401
+          incorrect_credentials!
         end
       rescue Cassy::AuthenticatorError => e
         logger.error(e)
@@ -207,9 +198,20 @@ module Cassy
         500
       end
     end
+    
+    def setup_from_params
+      # 2.2.1 (optional)
+      @service = clean_service_url(params['service'])
+
+      # 2.2.2 (required)
+      @username = params[:username].strip
+      @password = params[:password]
+      @lt = params['lt']
+    end
 
     # Initializes authenticator, returns true / false depending on if user credentials are accurate
     def valid_credentials?
+      setup_from_params
       @extra_attributes = {}
       # Should probably be moved out of the request cycle and into an after init hook on the engine
       auth_settings = Cassy.config["authenticator"]
@@ -223,11 +225,21 @@ module Cassy
                     }
 
       @user = @authenticator.find_user(credentials)
-      @authenticator.extra_attributes_to_extract.each do |attr|
-        @extra_attributes[attr] = @user.send(attr)
-      end
 
-      @authenticator.validate(credentials)
+      valid = @authenticator.validate(credentials)
+      if valid
+        @authenticator.extra_attributes_to_extract.each do |attr|
+          puts "EXTRACTING A NEW ATTRIBUTE: #{attr}"
+          @extra_attributes[attr] = @user.send(attr)
+        end
+      end
+      
+      return valid
+    end
+    
+    def incorrect_credentials!
+      flash[:error] = "Incorrect username or password."
+      render :new, :status => 401
     end
   end
 end

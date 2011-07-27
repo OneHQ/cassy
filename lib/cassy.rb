@@ -1,3 +1,4 @@
+require 'cassy/generators/views_generator'
 require 'cassy/routes'
 
 module Cassy
