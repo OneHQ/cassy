@@ -122,7 +122,7 @@ module Cassy
       if @gateway && @service
         redirect_to @service, :status => 303
       else
-        render :new
+        redirect_to "/cas/login?service=#{@service}/users/service"
       end
     end
     
