@@ -199,7 +199,7 @@ module Cassy
       end
     end
     
-    def setup_from_params
+    def setup_from_params!
       # 2.2.1 (optional)
       @service = clean_service_url(params['service'])
 
@@ -211,7 +211,7 @@ module Cassy
 
     # Initializes authenticator, returns true / false depending on if user credentials are accurate
     def valid_credentials?
-      setup_from_params
+      setup_from_params!
       @extra_attributes = {}
       # Should probably be moved out of the request cycle and into an after init hook on the engine
       auth_settings = Cassy.config["authenticator"]
