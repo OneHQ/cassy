@@ -122,7 +122,8 @@ module Cassy
       if @gateway && @service
         redirect_to @service, :status => 303
       else
-        redirect_to "/cas/login?service=#{@service}/users/service"
+        # TODO: Do not hardcode "/user/service"
+        redirect_to "/cas/login?service=#{@service}/user/service"
       end
     end
     
