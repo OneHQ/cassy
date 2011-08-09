@@ -14,7 +14,7 @@ module Cassy
       end
 
       if tgt and !tgt_error
-        flash[:notice] = "You are currently logged in as '%s'. If this is not you, please log in below." % tgt.username
+        flash.now[:notice] = "You are currently logged in as '%s'. If this is not you, please log in below." % tgt.username
       end
 
       if params['redirection_loop_intercepted']
@@ -61,7 +61,7 @@ module Cassy
           response.set_cookie('tgt', tgt.to_s)
 
           if @service.blank?
-            flash[:notice] = "You have successfully logged in."
+            flash.now[:notice] = "You have successfully logged in."
             render :new
           else
             @st = generate_service_ticket(@service, @username, tgt)
