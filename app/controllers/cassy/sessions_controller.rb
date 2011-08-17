@@ -18,7 +18,7 @@ module Cassy
       end
 
       if params['redirection_loop_intercepted']
-        flash[:error] = "The client and server are unable to negotiate authentication. Please try logging in again later."
+        flash.now[:error] = "The client and server are unable to negotiate authentication. Please try logging in again later."
       end
 
       begin
@@ -31,10 +31,10 @@ module Cassy
             redirect @service, 303
           end
         elsif @gateway
-          flash[:error] = "The server cannot fulfill this gateway request because no service parameter was given."
+          flash.now[:error] = "The server cannot fulfill this gateway request because no service parameter was given."
         end
       rescue URI::InvalidURIError
-        flash[:error] = "The target service your browser supplied appears to be invalid. Please contact your system administrator for help."
+        flash.now[:error] = "The target service your browser supplied appears to be invalid. Please contact your system administrator for help."
       end
 
       @lt = generate_login_ticket.ticket
@@ -44,7 +44,7 @@ module Cassy
       setup_from_params!
 
       if error = validate_login_ticket(@lt)
-        flash[:error] = error
+        flash.now[:error] = error
         @lt = generate_login_ticket.ticket
         render(:new, :status => 500) and return
       end
@@ -70,7 +70,7 @@ module Cassy
               service_with_ticket = service_uri_with_ticket(@service, @st)
               redirect_to service_with_ticket, :status => 303 # response code 303 means "See Other" (see Appendix B in CAS Protocol spec)
             rescue URI::InvalidURIError
-              flash[:error] = "The target service your browser supplied appears to be invalid. Please contact your system administrator for help."
+              flash.now[:error] = "The target service your browser supplied appears to be invalid. Please contact your system administrator for help."
             end
           end
         else
@@ -239,7 +239,7 @@ module Cassy
     end
     
     def incorrect_credentials!
-      flash[:error] = "Incorrect username or password."
+      flash.now[:error] = "Incorrect username or password."
       render :new, :status => 401
     end
   end
