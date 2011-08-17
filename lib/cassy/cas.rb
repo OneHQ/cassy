@@ -149,7 +149,7 @@ module Cassy
         logger.warn "Invalid login ticket '#{ticket}'"
       end
 
-      lt.consume! if lt
+      lt.consume! if lt && !error.blank?
 
       error
     end
