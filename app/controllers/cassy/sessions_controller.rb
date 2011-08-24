@@ -239,6 +239,7 @@ module Cassy
     end
     
     def incorrect_credentials!
+      @lt = generate_login_ticket.ticket
       flash.now[:error] = "Incorrect username or password."
       render :new, :status => 401
     end
