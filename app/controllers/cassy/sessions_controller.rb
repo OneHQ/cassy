@@ -3,6 +3,7 @@ module Cassy
     include Cassy::Utils
     include Cassy::CAS
 
+
     def new
       # optional params
       @service = clean_service_url(params['service'])
@@ -20,16 +21,21 @@ module Cassy
       if params['redirection_loop_intercepted']
         flash.now[:error] = "The client and server are unable to negotiate authentication. Please try logging in again later."
       end
-
+      
+        
       begin
         if @service
-          if !@renew && tgt && !tgt_error
-            st = generate_service_ticket(@service, tgt.username, tgt)
-            service_with_ticket = service_uri_with_ticket(@service, st)
-            redirect_to service_with_ticket, :status => 303 # response code 303 means "See Other" (see Appendix B in CAS Protocol spec)
+          if session[:username] && valid_credentials?
+            cas_login     
+            redirect_to_url = @service_with_ticket
+          elsif !@renew && tgt && !tgt_error
+            st = @service_tickets[@service]
+            redirect_to_url = service_uri_with_ticket(@service, st)
           elsif @gateway
-            redirect @service, 303
+            redirect_to_url = @service, 303
           end
+          redirect_to redirect_to_url, :status => 303 if redirect_to_url# response code 303 means "See Other" (see Appendix B in CAS Protocol spec) 
+
         elsif @gateway
           flash.now[:error] = "The server cannot fulfill this gateway request because no service parameter was given."
         end
@@ -53,25 +59,12 @@ module Cassy
       @lt = generate_login_ticket.ticket
 
       logger.debug("Logging in with username: #{@username}, lt: #{@lt}, service: #{@service}, auth: #{settings[:auth].inspect}")
-
       begin
-        if valid_credentials?
-          # 3.6 (ticket-granting cookie)
-          tgt = generate_ticket_granting_ticket(@username, @extra_attributes)
-          response.set_cookie('tgt', tgt.to_s)
-
-          if @service.blank?
-            flash.now[:notice] = "You have successfully logged in."
-            render :new
-          else
-            @st = generate_service_ticket(@service, @username, tgt)
-
-            begin
-              service_with_ticket = service_uri_with_ticket(@service, @st)
-              redirect_to service_with_ticket, :status => 303 # response code 303 means "See Other" (see Appendix B in CAS Protocol spec)
-            rescue URI::InvalidURIError
-              flash.now[:error] = "The target service your browser supplied appears to be invalid. Please contact your system administrator for help."
-            end
+        if cas_login
+          begin
+            redirect_to @service_with_ticket, :status => 303 # response code 303 means "See Other" (see Appendix B in CAS Protocol spec)
+          rescue URI::InvalidURIError
+            flash.now[:error] = "The target service your browser supplied appears to be invalid. Please contact your system administrator for help."
           end
         else
           incorrect_credentials!
@@ -98,7 +91,7 @@ module Cassy
       tgt = Cassy::TicketGrantingTicket.find_by_ticket(request.cookies['tgt'])
 
       response.delete_cookie 'tgt'
-
+      
       if tgt
         Cassy::TicketGrantingTicket.transaction do
           pgts = Cassy::ProxyGrantingTicket.find(:all,
@@ -115,7 +108,7 @@ module Cassy
       else
         # $LOG.warn("User tried to log out without a valid ticket-granting ticket.")
       end
-      
+       
       flash[:notice] = "You have successfully logged out."
       @lt = generate_login_ticket
 
@@ -205,7 +198,7 @@ module Cassy
       @service = clean_service_url(params['service'])
 
       # 2.2.2 (required)
-      @username = params[:username].strip
+      @username = session[:username].present? ? session[:username] : params[:username].strip
       @password = params[:password]
       @lt = params['lt']
     end
@@ -227,12 +220,14 @@ module Cassy
 
       @user = @authenticator.find_user(credentials)
 
-      valid = @authenticator.validate(credentials)
+      @cas_client_username = @user[settings["client_app_user_field"]] if settings["client_app_user_field"].present?
+    
+      valid = (session[:username] == @username) || @authenticator.validate(credentials) 
       if valid
         @authenticator.extra_attributes_to_extract.each do |attr|
-          puts "EXTRACTING A NEW ATTRIBUTE: #{attr}"
           @extra_attributes[attr] = @user.send(attr)
         end
+        session[:username]=@username
       end
       
       return valid
@@ -243,5 +238,43 @@ module Cassy
       flash.now[:error] = "Incorrect username or password."
       render :new, :status => 401
     end
+
+    protected
+    def valid_services
+      @valid_services ||= settings[:service_list].split(" ")
+    end
+
+    def find_or_generate_service_tickets(username, tgt)
+      @service_tickets={}
+      valid_services.each do |service|
+        @service_tickets[service] = generate_service_ticket(service, username, tgt)
+      end
+    end
+
+    def cas_login
+      if valid_credentials?
+        # 3.6 (ticket-granting cookie)
+        tgt = generate_ticket_granting_ticket(ticket_username, @extra_attributes)
+        response.set_cookie('tgt', tgt.to_s)
+
+        if @service.blank?
+          flash.now[:notice] = "You have successfully logged in."
+          render :new
+        else
+          find_or_generate_service_tickets(ticket_username, tgt)
+          @st = @service_tickets[@service]
+          @service_with_ticket = service_uri_with_ticket(@service, @st)
+          
+        end
+        true
+      else
+        false
+      end
+   end
+
+    def ticket_username
+      @cas_client_username || @username
+    end
+    helper_method :ticket_username
   end
 end

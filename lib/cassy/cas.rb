@@ -326,4 +326,5 @@ module Cassy
     module_function :clean_service_url
 
   end
+
 end

@@ -5,6 +5,7 @@ module Cassy
         attr_accessor :options
         attr_reader :username # make this accessible so that we can pick up any
                               # transformations done within the authenticator
+        attr_accessor :client_app_user_field
       end
 
       # This is called at server startup.
@@ -60,8 +61,8 @@ module Cassy
       def self.read_standard_credentials(credentials)
         @username = credentials[:username]
         @password = credentials[:password]
-        @service = credentials[:service]
-        @request = credentials[:request]
+        @service  = credentials[:service]
+        @request  = credentials[:request]
       end
 
       def extra_attributes_to_extract
