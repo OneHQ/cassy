@@ -32,7 +32,7 @@ module Cassy
             st = @service_tickets[@service]
             redirect_to_url = service_uri_with_ticket(@service, st)
           elsif @gateway
-            redirect_to_url = @service, 303
+            redirect_to_url = @service
           end
           redirect_to redirect_to_url, :status => 303 if redirect_to_url# response code 303 means "See Other" (see Appendix B in CAS Protocol spec) 
 
