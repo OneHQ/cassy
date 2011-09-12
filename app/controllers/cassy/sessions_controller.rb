@@ -198,7 +198,7 @@ module Cassy
       @service = clean_service_url(params['service'])
 
       # 2.2.2 (required)
-      @username = session[:username].present? ? session[:username] : params[:username].strip
+      @username = session[:username] || params[:username].strip
       @password = params[:password]
       @lt = params['lt']
     end
