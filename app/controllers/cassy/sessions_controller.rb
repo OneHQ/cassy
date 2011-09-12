@@ -241,7 +241,7 @@ module Cassy
 
     protected
     def valid_services
-      @valid_services ||= settings[:service_list].split(" ")
+      @valid_services || settings[:service_list]
     end
 
     def find_or_generate_service_tickets(username, tgt)
