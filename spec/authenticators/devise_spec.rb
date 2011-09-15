@@ -1,11 +1,13 @@
 require 'spec_helper'
+require 'rubygems'
+require 'ruby-debug'
 
 describe Cassy::Authenticators::Devise do
   before(:all) do
     define_devise_schema
   end
   
-  before do
+  before(:each) do
     @valid_email = "test_user@example.com"
     @valid_username = "bobbles"
     @valid_password = "password"
@@ -24,7 +26,7 @@ describe Cassy::Authenticators::Devise do
     it "logs in successfully with valid email and password without a target service" do
       visit "/cas/login"
 
-      fill_in 'Email', :with => @valid_email
+      fill_in 'Email',    :with => @valid_email
       fill_in 'Password', :with => @valid_password
       click_button 'Login'
       page.should have_content("You have successfully logged in")

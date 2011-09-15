@@ -10,24 +10,24 @@ describe Cassy::Authenticators::Test do
 
   before do
     @target_service = 'http://my.app.test'
-    Cassy::Engine.config.configuration_file = File.dirname(__FILE__) + "/default_config.yml"
+    config = File.dirname(__FILE__) + "/../default_config.yml"
+    Cassy::Engine.config.configuration = HashWithIndifferentAccess.new(YAML.load_file(config))
   end
 
   describe "/cas/login" do
 
     it "logs in successfully with valid username and password without a target service" do
       visit "/cas/login"
-
-      fill_in 'Username', :with => VALID_USERNAME
+      fill_in 'username', :with => VALID_USERNAME
       fill_in 'Password', :with => VALID_PASSWORD
       click_button 'Login'
-
       page.should have_content("You have successfully logged in")
+
     end
 
     it "fails to log in with invalid password" do
       visit "/cas/login"
-      fill_in 'Username', :with => VALID_USERNAME
+      fill_in 'username', :with => VALID_USERNAME
       fill_in 'Password', :with => INVALID_PASSWORD
       click_button 'Login'
 
@@ -36,7 +36,6 @@ describe Cassy::Authenticators::Test do
 
     it "logs in successfully with valid username and password and redirects to target service" do
       visit "/cas/login?service="+CGI.escape(@target_service)
-
       fill_in 'username', :with => VALID_USERNAME
       fill_in 'password', :with => VALID_PASSWORD
 
@@ -87,7 +86,7 @@ describe Cassy::Authenticators::Test do
 
       visit "/cas/login?service="+CGI.escape(@target_service)
 
-      fill_in 'Username', :with => VALID_USERNAME
+      fill_in 'username', :with => VALID_USERNAME
       fill_in 'Password', :with => VALID_PASSWORD
 
       click_button 'Login'
@@ -99,9 +98,7 @@ describe Cassy::Authenticators::Test do
     it "should have extra attributes in proper format" do
       Cassy::Engine.config.configuration[:extra_attributes] = [{ :user => :full_name }]
       visit "/cas/serviceValidate?service=#{CGI.escape(@target_service)}&ticket=#{@ticket}"
-
-      page.body.should match("<full name>Example User</full_name>")
-      page.body.should match
+      page.body.should match("<full_name>Example User</full_name>")
     end
   end
 end

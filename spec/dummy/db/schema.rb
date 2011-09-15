@@ -47,4 +47,11 @@ ActiveRecord::Schema.define(:version => 20110615063437) do
     t.text     "extra_attributes"
   end
 
+  create_table "users", :force => true do |t|
+    t.string "username"
+    t.string "email"
+    t.string "encrypted_password"
+    t.string "full_name"
+  end
+
 end

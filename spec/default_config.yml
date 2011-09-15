@@ -12,3 +12,5 @@ authenticator:
 
   
 enable_single_sign_out: true
+service_list: 
+  - http://my.app.test

@@ -15,7 +15,7 @@ module Cassy
       end
 
       if tgt and !tgt_error
-        flash.now[:notice] = "You are currently logged in as '%s'. If this is not you, please log in below." % tgt.username
+        flash.now[:notice] = "You are currently logged in as '%s'. If this is not you, please log in below." % @ticketed_user[settings[:username_field]]
       end
 
       if params['redirection_loop_intercepted']
@@ -25,10 +25,11 @@ module Cassy
         
       begin
         if @service
-          if session[:username] && valid_credentials?
+          if @ticketed_user && valid_credentials?
             cas_login     
             redirect_to_url = @service_with_ticket
           elsif !@renew && tgt && !tgt_error
+            find_or_generate_service_tickets(ticket_username, tgt)
             st = @service_tickets[@service]
             redirect_to_url = service_uri_with_ticket(@service, st)
           elsif @gateway
@@ -59,10 +60,16 @@ module Cassy
       @lt = generate_login_ticket.ticket
 
       logger.debug("Logging in with username: #{@username}, lt: #{@lt}, service: #{@service}, auth: #{settings[:auth].inspect}")
+
       begin
         if cas_login
           begin
-            redirect_to @service_with_ticket, :status => 303 # response code 303 means "See Other" (see Appendix B in CAS Protocol spec)
+            if @service.blank?
+              flash.now[:notice] = "You have successfully logged in."
+              render :new
+            else
+              redirect_to @service_with_ticket, :status => 303 if @service_with_ticket# response code 303 means "See Other" (see Appendix B in CAS Protocol spec)
+            end
           rescue URI::InvalidURIError
             flash.now[:error] = "The target service your browser supplied appears to be invalid. Please contact your system administrator for help."
           end
@@ -131,7 +138,7 @@ module Cassy
       @success = st && !@error
 
       if @success
-        @username = st.username
+        @username = ticketed_user(st).send(settings[:username_field])
         if @pgt_url
           pgt = generate_proxy_granting_ticket(@pgt_url, st)
           @pgtiou = pgt.iou if pgt
@@ -160,7 +167,7 @@ module Cassy
 
       @extra_attributes = {}
       if @success
-        @username = t.username
+        @username = ticketed_user(t)[settings[:username_field]]
 
         if t.kind_of? Cassy::ProxyTicket
           @proxies << t.granted_by_pgt.service_ticket.service
@@ -198,7 +205,7 @@ module Cassy
       @service = clean_service_url(params['service'])
 
       # 2.2.2 (required)
-      @username = session[:username] || params[:username].strip
+      @username = params[:username].strip
       @password = params[:password]
       @lt = params['lt']
     end
@@ -208,26 +215,20 @@ module Cassy
       setup_from_params!
       @extra_attributes = {}
       # Should probably be moved out of the request cycle and into an after init hook on the engine
-      auth_settings = Cassy.config["authenticator"]
-      @authenticator = auth_settings["class"].constantize
-      @authenticator.configure(auth_settings)
 
       credentials = { :username => @username,
                       :password => @password,
-                      :service => @service,
-                      :request => @env
+                      :service  => @service,
+                      :request  => @env
                     }
 
-      @user = @authenticator.find_user(credentials)
-
-      @cas_client_username = @user[settings["client_app_user_field"]] if settings["client_app_user_field"].present?
-    
-      valid = (session[:username] == @username) || @authenticator.validate(credentials) 
+      @user = authenticator.find_user(credentials)
+      valid = ((@user == @ticketed_user) || authenticator.validate(credentials))  && !!@user
       if valid
-        @authenticator.extra_attributes_to_extract.each do |attr|
+        authenticator.extra_attributes_to_extract.each do |attr|
           @extra_attributes[attr] = @user.send(attr)
         end
-        session[:username]=@username
+        #session["cassy.user.key"]=@username
       end
       
       return valid
@@ -256,16 +257,13 @@ module Cassy
         # 3.6 (ticket-granting cookie)
         tgt = generate_ticket_granting_ticket(ticket_username, @extra_attributes)
         response.set_cookie('tgt', tgt.to_s)
-
-        if @service.blank?
-          flash.now[:notice] = "You have successfully logged in."
-          render :new
-        else
+        
+        unless @service.blank?
           find_or_generate_service_tickets(ticket_username, tgt)
           @st = @service_tickets[@service]
           @service_with_ticket = service_uri_with_ticket(@service, @st)
-          
         end
+
         true
       else
         false
@@ -273,8 +271,24 @@ module Cassy
    end
 
     def ticket_username
+      # Store this into someticket.username
+      # It will get used to find users in client apps
+      @cas_client_username = @user[settings["client_app_user_field"]] if settings["client_app_user_field"].present?
       @cas_client_username || @username
     end
-    helper_method :ticket_username
+    
+    def ticketed_user(ticket)
+      # Find the SSO's instance of the user
+      @ticketed_user ||= authenticator.find_user_from_ticket(ticket)
+    end
+
+    def authenticator
+      unless @authenticator
+        auth_settings = Cassy.config["authenticator"]
+        @authenticator ||= auth_settings["class"].constantize
+        @authenticator.configure(auth_settings)
+      end
+      @authenticator
+    end
   end
 end

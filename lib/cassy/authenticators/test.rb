@@ -15,13 +15,20 @@ class Cassy::Authenticators::Test < Cassy::Authenticators::Base
 
     return @password == valid_password
   end
-  
+
   def self.find_user(*args)
     # To stop NotImplementedError raising
     @user = Object.new
     def @user.full_name
       "Example User"
     end
+    def @user.username
+      "Users Username"
+    end
     @user
+  end
+
+  class << self
+    alias_method :find_user_from_ticket, :find_user
   end
 end

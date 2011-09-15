@@ -8,6 +8,12 @@ module Cassy
         User.send(method, credentials[:username])
       end
       
+      def self.find_user_from_ticket(ticket)
+        key  = Cassy.config[:client_app_user_field] || Cassy.config[:username_field] || "email"
+        method = "find_by_#{key}"
+        User.send(method, ticket.username)
+      end
+
       def self.validate(credentials)
         user = find_user(credentials)
         # Did we find a user, and is their password valid?

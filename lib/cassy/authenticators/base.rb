@@ -19,6 +19,9 @@ module Cassy
         raise NotImplementedError
       end
 
+      def self.find_user_from_ticket(ticket)
+        raise NotImplementedError
+      end
       # This is called prior to #validate (i.e. each time the user tries to log in).
       # Any per-instance initialization for the authenticator should be done here.
       #
