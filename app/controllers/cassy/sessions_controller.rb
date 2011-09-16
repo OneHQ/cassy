@@ -9,13 +9,12 @@ module Cassy
       @service = clean_service_url(params['service'])
       @renew = params['renew']
       @gateway = params['gateway'] == 'true' || params['gateway'] == '1'
-
       if tgc = request.cookies['tgt']
         tgt, tgt_error = validate_ticket_granting_ticket(tgc)
       end
 
       if tgt and !tgt_error
-        flash.now[:notice] = "You are currently logged in as '%s'. If this is not you, please log in below." % @ticketed_user[settings[:username_field]]
+        flash.now[:notice] = "You are currently logged in as '%s'. If this is not you, please log in below." % ticketed_user(tgt)[settings[:username_field]]
       end
 
       if params['redirection_loop_intercepted']
@@ -136,9 +135,8 @@ module Cassy
 
       st, @error = validate_service_ticket(@service, @ticket)
       @success = st && !@error
-
       if @success
-        @username = ticketed_user(st).send(settings[:username_field])
+        @username = ticketed_user(st).send(settings[:client_app_user_field])
         if @pgt_url
           pgt = generate_proxy_granting_ticket(@pgt_url, st)
           @pgtiou = pgt.iou if pgt
@@ -167,7 +165,7 @@ module Cassy
 
       @extra_attributes = {}
       if @success
-        @username = ticketed_user(t)[settings[:username_field]]
+        @username = ticketed_user(t)[settings[:cas_app_user_filed]]
 
         if t.kind_of? Cassy::ProxyTicket
           @proxies << t.granted_by_pgt.service_ticket.service
@@ -205,7 +203,7 @@ module Cassy
       @service = clean_service_url(params['service'])
 
       # 2.2.2 (required)
-      @username = params[:username].strip
+      @username = params[:username].try(:strip)
       @password = params[:password]
       @lt = params['lt']
     end
@@ -268,12 +266,13 @@ module Cassy
       else
         false
       end
-   end
+    end
 
     def ticket_username
       # Store this into someticket.username
       # It will get used to find users in client apps
-      @cas_client_username = @user[settings["client_app_user_field"]] if settings["client_app_user_field"].present?
+      user = @user || @ticketed_user
+      @cas_client_username = user[settings["client_app_user_field"]] if settings["client_app_user_field"].present? && !!user
       @cas_client_username || @username
     end
     
