@@ -45,34 +45,35 @@ The configuration options for this gem goes into a file called `config/cassy.yml
 
 These configuration options are detailed here for your convenience. For specific term definitions, please consult the CAS spec.
 
-`authenticator`: Must specify at least one key, `class`, which is a string version of a constant that will be used for authentication in the system. This constant *must* respond to `validate`.
-`maximum_unused_login_ticket_lifetime`: The time before a login ticket would expire.
-`maximum_unused_service_ticket_lifetime`: The time before a service ticket would expire.
-`username_field`: Defines the field on the users table which is used for the lookup for the username. Defaults to "username".
-`username_label`: Allows for the "Username" label on the sign in page to be given a different value. Helpful if you want to call it "Email" or "User Name" instead.
-'client_app_user_field'
-'service_list'
+* `authenticator`: Must specify at least one key, `class`, which is a string version of a constant that will be used for authentication in the system. This constant *must* respond to `validate`.
+* `maximum_unused_login_ticket_lifetime`: The time before a login ticket would expire.
+* `maximum_unused_service_ticket_lifetime`: The time before a service ticket would expire.
+* `username_field`: Defines the field on the users table which is used for the lookup for the username. Defaults to " username".
+* `username_label`: Allows for the "Username" label on the sign in page to be given a different value. Helpful if you want to call it "Email" or "User Name" instead.
+* `client_app_user_field`: Defines the field name for the username on the *client* application side.
+* `service_list`: List of services that use this server to authenticate.
 
-Here is a sample cassy.yml file:
 
-maximum_unused_login_ticket_lifetime: 7200
-maximum_unused_service_ticket_lifetime: 7200
-maximum_session_lifetime: 7200
-  username_field: username
-  client_app_user_field: id
-service_list:
-  # production
-  - https://agencieshq.com/users/service
-  - https://administratorshq.agencieshq.com/users/service
-  # development
-  - http://localhost:3000/users/service
-  - http://localhost:3001/users/service
-  - http://localhost:3002/users/service
-authenticator:
-  class: Cassy::Authenticators::Devise
-extra_attributes:
-  - user_id
-  - user_username
+For your viewing pleasure, here is a sample `cassy.yml` file:
+
+    maximum_unused_login_ticket_lifetime: 7200
+    maximum_unused_service_ticket_lifetime: 7200
+    maximum_session_lifetime: 7200
+      username_field: username
+      client_app_user_field: id
+    service_list:
+      # production
+      - https://agencieshq.com/users/service
+      - https://administratorshq.agencieshq.com/users/service
+      # development
+      - http://localhost:3000/users/service
+      - http://localhost:3001/users/service
+      - http://localhost:3002/users/service
+    authenticator:
+      class: Cassy::Authenticators::Devise
+    extra_attributes:
+      - user_id
+      - user_username
 
 ## Customization
 
