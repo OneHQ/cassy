@@ -7,7 +7,10 @@ module Cassy
     has_one :proxy_granting_ticket, :foreign_key => :created_by_st_id
 
     def matches_service?(service)
-      Cassy::CAS.clean_service_url(self.service) == Cassy::CAS.clean_service_url(service)
+      # check for a matching service in the service list
+      # then check for a matching service with a wildcard subdomain
+      Cassy::CAS.clean_service_url(self.service) == Cassy::CAS.clean_service_url(service) ||
+        Cassy::CAS.clean_service_url(Cassy::CAS.conform_uri(self.service)) == Cassy::CAS.clean_service_url(Cassy::CAS.conform_uri(service))
     end
   end
 end

@@ -150,7 +150,7 @@ module Cassy
     end
     
     def proxy_validate
-
+      
       # required
       @service = clean_service_url(params['service'])
       @ticket = params['ticket']
@@ -159,13 +159,13 @@ module Cassy
       @renew = params['renew']
 
       @proxies = []
-
+      
       t, @error = validate_proxy_ticket(@service, @ticket)
       @success = t && !@error
-
+      
       @extra_attributes = {}
       if @success
-        @username = ticketed_user(t)[settings[:cas_app_user_filed]]
+        @username = ticketed_user(t)[settings[:client_app_user_field]]
 
         if t.kind_of? Cassy::ProxyTicket
           @proxies << t.granted_by_pgt.service_ticket.service
@@ -178,7 +178,6 @@ module Cassy
 
         @extra_attributes = t.granted_by_tgt.extra_attributes || {}
       end
-
       status = response_status_from_error(@error) if @error
 
       render :proxy_validate, :layout => false, :status => status || 200
@@ -219,7 +218,7 @@ module Cassy
                       :service  => @service,
                       :request  => @env
                     }
-
+                    
       @user = authenticator.find_user(credentials)
       valid = ((@user == @ticketed_user) || authenticator.validate(credentials))  && !!@user
       if valid
@@ -258,7 +257,8 @@ module Cassy
         
         unless @service.blank?
           find_or_generate_service_tickets(ticket_username, tgt)
-          @st = @service_tickets[@service]
+          @st = find_service_ticket(@service)
+          return false if @st.nil? # if a matching ticket isn't found, bail
           @service_with_ticket = service_uri_with_ticket(@service, @st)
         end
 
@@ -267,7 +267,21 @@ module Cassy
         false
       end
     end
-
+    
+    def find_service_ticket(service)
+      
+      # check for full match and return if found
+      return @service_tickets[@service] unless @service_tickets[@service].nil?
+        
+      # check for wildcard subdomains
+      # conform uri's in service list to known goods
+      # service_list_conformed = Hash[@service_tickets.map { |k, v| [conform_uri_with_wildcard(k), v] }]
+      service_list_conformed = Hash[@service_tickets.map { |k, v| [conform_uri(k), v] }]
+      
+      # conform current uri to a known good and search for it in conformed service list
+      return service_list_conformed[conform_uri(service)]
+    end
+    
     def ticket_username
       # Store this into someticket.username
       # It will get used to find users in client apps
