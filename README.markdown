@@ -50,6 +50,29 @@ These configuration options are detailed here for your convenience. For specific
 `maximum_unused_service_ticket_lifetime`: The time before a service ticket would expire.
 `username_field`: Defines the field on the users table which is used for the lookup for the username. Defaults to "username".
 `username_label`: Allows for the "Username" label on the sign in page to be given a different value. Helpful if you want to call it "Email" or "User Name" instead.
+'client_app_user_field'
+'service_list'
+
+Here is a sample cassy.yml file:
+
+maximum_unused_login_ticket_lifetime: 7200
+maximum_unused_service_ticket_lifetime: 7200
+maximum_session_lifetime: 7200
+  username_field: username
+  client_app_user_field: id
+service_list:
+  # production
+  - https://agencieshq.com/users/service
+  - https://administratorshq.agencieshq.com/users/service
+  # development
+  - http://localhost:3000/users/service
+  - http://localhost:3001/users/service
+  - http://localhost:3002/users/service
+authenticator:
+  class: Cassy::Authenticators::Devise
+extra_attributes:
+  - user_id
+  - user_username
 
 ## Customization
 
