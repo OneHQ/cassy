@@ -68,6 +68,13 @@ module Cassy
       st
     end
 
+    def find_or_generate_service_tickets(username, tgt)
+      @service_tickets={}
+      valid_services.each do |service|
+        @service_tickets[service] = generate_service_ticket(service, username, tgt)
+      end
+    end
+
     def generate_proxy_ticket(target_service, pgt)
       # 3.2 (proxy ticket)
       pt = ProxyTicket.new

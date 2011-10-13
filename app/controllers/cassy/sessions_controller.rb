@@ -243,13 +243,6 @@ module Cassy
       @valid_services || settings[:service_list]
     end
 
-    def find_or_generate_service_tickets(username, tgt)
-      @service_tickets={}
-      valid_services.each do |service|
-        @service_tickets[service] = generate_service_ticket(service, username, tgt)
-      end
-    end
-
     def cas_login
       if valid_credentials?
         # 3.6 (ticket-granting cookie)
