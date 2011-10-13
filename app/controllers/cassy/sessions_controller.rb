@@ -239,10 +239,6 @@ module Cassy
     end
 
     protected
-    def valid_services
-      @valid_services || settings[:service_list]
-    end
-
     def cas_login
       if valid_credentials?
         # 3.6 (ticket-granting cookie)
