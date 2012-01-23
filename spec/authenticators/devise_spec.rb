@@ -6,14 +6,14 @@ describe Cassy::Authenticators::Devise do
   before(:all) do
     define_devise_schema
   end
-  
+
   before(:each) do
     @valid_email = "test_user@example.com"
     @valid_username = "bobbles"
     @valid_password = "password"
-    
-    User.create!(:email => @valid_email, :password => @valid_password, :username => @valid_username, :full_name => "Valid User")
-    
+
+    @user = User.create!(:email => @valid_email, :password => @valid_password, :username => @valid_username, :full_name => "Valid User")
+
     @target_service = 'http://my.app.test'
     Cassy::Engine.config.configuration_file = File.dirname(__FILE__) + "/default_config.yml"
     Cassy::Engine.config.configuration[:authenticator][:class] = "Cassy::Authenticators::Devise"
@@ -31,11 +31,11 @@ describe Cassy::Authenticators::Devise do
       click_button 'Login'
       page.should have_content("You have successfully logged in")
     end
-    
+
     it "logs in successfully with valid username and password without a target service" do
       Cassy::Engine.config.configuration[:username_label] = "Username"
       Cassy::Engine.config.configuration[:username_field] = "username"
-      
+
       visit "/cas/login"
 
       fill_in 'Username', :with => @valid_username
@@ -75,6 +75,18 @@ describe Cassy::Authenticators::Devise do
       page.should have_xpath('//input[@id="service"]', :value => @target_service)
     end
 
+    it "allows a user to be disabled using the standard Devise :active_for_authentication? method" do
+      visit "/cas/login?service="+CGI.escape(@target_service)
+
+      @user.stub!(:active_for_authentication?).and_return(false)
+      fill_in 'Email', :with => @valid_email
+      fill_in 'password', :with => @valid_password
+      click_button 'Login'
+
+      page.should have_content("Incorrect username or password")
+      page.should have_xpath('//input[@id="service"]', :value => @target_service)
+    end
+
     it "is not vunerable to Cross Site Scripting" do
       visit '/cas/login?service=%22%2F%3E%3cscript%3ealert%2832%29%3c%2fscript%3e'
       page.should_not have_content("alert(32)")
@@ -99,7 +111,7 @@ describe Cassy::Authenticators::Devise do
       page.current_url.should =~ /^#{Regexp.escape(@target_service)}\/?/
     end
 
-  end # describe '/logout' 
+  end # describe '/logout'
 
   describe "proxyValidate" do
     before do
