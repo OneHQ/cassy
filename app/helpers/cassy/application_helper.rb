@@ -6,9 +6,7 @@ module Cassy
       elsif value.kind_of?(Numeric)
         builder.tag! key, value.to_s
       else
-        builder.tag! key do
-          builder.cdata! value.to_yaml
-        end
+        builder.tag! key, value.to_yaml
       end
     end
   end
