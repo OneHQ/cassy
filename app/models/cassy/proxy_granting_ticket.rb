@@ -1,5 +1,6 @@
 module Cassy
-  class ProxyGrantingTicket < Ticket
+  class ProxyGrantingTicket < ActiveRecord::Base
+	include Cassy::Ticket
     set_table_name 'casserver_pgt'
     belongs_to :service_ticket
     has_many :granted_proxy_tickets,

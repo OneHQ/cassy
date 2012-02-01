@@ -1,5 +1,5 @@
 module Cassy
-  class Ticket < ActiveRecord::Base
+  module Ticket
     def to_s
       ticket
     end

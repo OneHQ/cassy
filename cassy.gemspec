@@ -2,8 +2,8 @@
 # project in your rails apps through git.
 Gem::Specification.new do |s|
   s.name = "cassy"
-  s.summary = "Insert Cassy summary."
-  s.authors = ["ryan@rubyx.com"]
+  s.summary = "Cassy is a rails CAS engine"
+  s.authors = ["ryan@reinteractive.net"]
   s.description = "An engine that provides a CAS server to the application it's included within."
   s.files = Dir["lib/**/*"] + ["MIT-LICENSE", "Rakefile", "README.markdown"]
   s.version = "1.1.4"

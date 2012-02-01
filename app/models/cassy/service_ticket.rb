@@ -1,5 +1,6 @@
 module Cassy
-  class ServiceTicket < Ticket
+  class ServiceTicket < ActiveRecord::Base
+	include Cassy::Ticket
     set_table_name 'casserver_st'
     include Consumable
 
