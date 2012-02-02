@@ -8,7 +8,7 @@ require 'cassy/utils'
 # the Cassy::Controllers module.
 module Cassy
   module CAS
-
+    
     class Error
       attr_reader :code, :message
 
@@ -225,7 +225,6 @@ module Cassy
 
     def validate_proxy_ticket(service, ticket)
       pt, error = validate_service_ticket(service, ticket, true)
-
       if pt.kind_of?(Cassy::ProxyTicket) && !error
         if not pt.granted_by_pgt
           error = Error.new(:INTERNAL_ERROR, "Proxy ticket '#{pt}' belonging to user '#{pt.username}' is not associated with a proxy granting ticket.")
@@ -335,7 +334,17 @@ module Cassy
       return clean_service
     end
     module_function :clean_service_url
-
+    
+    # takes a URI and replaces the first (potentially wildcard) subdomain with a known good ('cas')
+    # then returns that domain and everything onward
+    # For example, "http://cassy.github.com/users/service" will be returned as ".github.com/users/service"
+    def conform_uri(uri)
+      URI.parse(uri.sub("*", "sub")).host.sub(/^www./, "")
+                                          .sub(/([^.]+)/, "cas") + 
+                                          URI.parse(uri.sub("*", "sub")).path
+    end
+    module_function :conform_uri
+    
   end
 
 end
