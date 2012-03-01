@@ -21,7 +21,11 @@ module Cassy
     has_one :proxy_granting_ticket, :foreign_key => :created_by_st_id
 
     def matches_service?(service)
-      Cassy::CAS.clean_service_url(self.service) == Cassy::CAS.clean_service_url(service)
+      if Cassy.config[:loosely_match_services] == true
+        Cassy::CAS.base_service_url(self.service) == Cassy::CAS.base_service_url(service)
+      else
+        Cassy::CAS.clean_service_url(self.service) == Cassy::CAS.clean_service_url(service)
+      end
     end
   end
 end

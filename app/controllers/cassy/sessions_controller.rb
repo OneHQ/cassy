@@ -63,7 +63,8 @@ module Cassy
       begin
         if cas_login
           begin
-            if @service.blank?
+            if !@ticketing_service
+              # we don't know where you want to go, having a default_service in the config would have helped here
               flash.now[:notice] = "You have successfully logged in."
               render :new
             else
@@ -150,7 +151,6 @@ module Cassy
     end
     
     def proxy_validate
-
       # required
       @service = clean_service_url(params['service'])
       @ticket = params['ticket']
@@ -200,8 +200,12 @@ module Cassy
     
     def setup_from_params!
       # 2.2.1 (optional)
-      @service = clean_service_url(params['service'])
-
+      @requested_service = params[:service]
+      
+      @ticketing_service = valid_services.detect{|s| s == @requested_service } || 
+        (settings[:loosely_match_services] == true && valid_services.detect{|s| s == base_service_url(@requested_service)}) ||
+        (settings[:default_service] && settings[:default_service][Rails.env])
+      
       # 2.2.2 (required)
       @username = params[:username].try(:strip)
       @password = params[:password]
@@ -245,10 +249,10 @@ module Cassy
         tgt = generate_ticket_granting_ticket(ticket_username, @extra_attributes)
         response.set_cookie('tgt', tgt.to_s)
         
-        unless @service.blank?
+        if @ticketing_service
           find_or_generate_service_tickets(ticket_username, tgt)
-          @st = @service_tickets[@service]
-          @service_with_ticket = service_uri_with_ticket(@service, @st)
+          @st = @service_tickets[@ticketing_service]          
+          @service_with_ticket = service_uri_with_ticket(@requested_service, @st)
         end
 
         true
@@ -261,7 +265,7 @@ module Cassy
       # Store this into someticket.username
       # It will get used to find users in client apps
       user = @user || @ticketed_user
-      @cas_client_username = user[settings["client_app_user_field"]] if settings["client_app_user_field"].present? && !!user
+      @cas_client_username = user.send(settings["client_app_user_field"]) if settings["client_app_user_field"].present? && !!user
       @cas_client_username || @username
     end
     

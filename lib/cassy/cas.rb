@@ -76,7 +76,12 @@ module Cassy
     end
 
     def valid_services
-      @valid_services || settings[:service_list]
+      if @valid_services
+      elsif settings[:loosely_match_services] == true
+        [settings[:service_list]].flatten.map{|s| base_service_url(s) }
+      else
+        settings[:service_list]
+      end
     end
 
     def generate_proxy_ticket(target_service, pgt)
@@ -335,6 +340,19 @@ module Cassy
       return clean_service
     end
     module_function :clean_service_url
+
+    def base_service_url(full_service_url)
+      # strips a url back to the domain part only 
+      # so that a service ticket can work for all urls on a given domain
+      # eg http://www.something.com/something_else
+      # is stripped back to
+      # http://www.something.com
+      # expects it to be in 'http://x' form
+      match = full_service_url.match(/(http(s?):\/\/[a-z0-9\.]*)/)
+      match && match[0]
+    end
+    module_function :base_service_url
+    
 
   end
 
