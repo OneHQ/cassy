@@ -10,6 +10,7 @@ describe Cassy::Authenticators::Test do
 
   before do
     @target_service = 'http://my.app.test'
+    @invalid_target_service = 'http://www.something.com'
     config = File.dirname(__FILE__) + "/../default_config.yml"
     Cassy::Engine.config.configuration = HashWithIndifferentAccess.new(YAML.load_file(config))
   end
@@ -60,6 +61,38 @@ describe Cassy::Authenticators::Test do
       page.should_not have_content("alert(32)")
       page.should_not have_xpath("//script")
       #page.should have_xpath("<script>alert(32)</script>")We
+    end
+    
+    it "logs in successfully with valid username and password and an invalid target service" do
+      visit "/cas/login?service="+CGI.escape(@invalid_target_service)
+      fill_in 'username', :with => VALID_USERNAME
+      fill_in 'password', :with => VALID_PASSWORD
+      click_button 'Login'
+      page.should have_content("You have successfully logged in")
+    end
+    
+    it "is able to loosely match service urls with the option set in cassy.yml" do
+      # eg we log in and try to go to http://my.app.test/something_else 
+      # and should be able to validate the ticket from http://my.app.test/users/service
+      Cassy::Engine.config.configuration[:loosely_match_services] = true
+      visit "/cas/login?service="+CGI.escape(@target_service+"/another_page")
+      fill_in 'username', :with => VALID_USERNAME
+      fill_in 'password', :with => VALID_PASSWORD
+      click_button 'Login'
+      page.should have_content("Hey you made it to the page of extra content")
+    end
+    
+    it "doesn't loosely match service urls if the option isn't set in cassy.yml" do
+      # eg we log in and try to go to http://my.app.test/something_else 
+      # and should be able to validate the ticket from http://my.app.test/users/service
+      # Cassy::Engine.config.configuration[:loosely_match_services] = false
+      Cassy::Engine.config.configuration[:loosely_match_services] = false
+      visit "/cas/login?service="+CGI.escape(@target_service+"/another_page")
+
+      fill_in 'username', :with => VALID_USERNAME
+      fill_in 'password', :with => VALID_PASSWORD
+      click_button 'Login'
+      page.should_not have_content("Hey you made it to the page of extra content")
     end
 
   end # describe '/login'

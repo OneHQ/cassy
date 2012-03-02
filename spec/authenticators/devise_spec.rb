@@ -79,6 +79,9 @@ describe Cassy::Authenticators::Devise do
       visit "/cas/login?service="+CGI.escape(@target_service)
 
       @user.stub!(:active_for_authentication?).and_return(false)
+      # so that devise doesn't grab its own reference to the new user object with the stub missing:
+      User.stub!(:find_by_email).and_return(@user)
+
       fill_in 'Email', :with => @valid_email
       fill_in 'password', :with => @valid_password
       click_button 'Login'
