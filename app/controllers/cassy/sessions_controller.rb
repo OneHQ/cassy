@@ -54,7 +54,6 @@ module Cassy
         @lt = generate_login_ticket.ticket
         render(:new, :status => 500) and return
       end
-      
       # generate another login ticket to allow for re-submitting the form after a post
       @lt = generate_login_ticket.ticket
 
@@ -63,7 +62,7 @@ module Cassy
       begin
         if cas_login
           begin
-            if @service.blank?
+            if !@ticketing_service
               flash.now[:notice] = "You have successfully logged in."
               render :new
             else
@@ -150,7 +149,6 @@ module Cassy
     end
     
     def proxy_validate
-
       # required
       @service = clean_service_url(params['service'])
       @ticket = params['ticket']
@@ -200,7 +198,16 @@ module Cassy
     
     def setup_from_params!
       # 2.2.1 (optional)
-      @service = clean_service_url(params['service'])
+      @service = params[:service]
+      @requested_service = params[:service]
+
+      @ticketing_service = valid_services.detect{|s| s == @requested_service } || 
+        (settings[:loosely_match_services] == true && valid_services.detect{|s| base_service_url(s) == base_service_url(@requested_service)})
+      if !@ticketing_service && settings[:default_redirect_url] && settings[:default_redirect_url][Rails.env]
+        # try to set it to the default_service
+        @ticketing_service = valid_services.detect{|s| base_service_url(s) == base_service_url(settings[:default_redirect_url][Rails.env])}
+        @default_redirect_url = settings[:default_redirect_url][Rails.env]
+      end
 
       # 2.2.2 (required)
       @username = params[:username].try(:strip)
@@ -244,13 +251,11 @@ module Cassy
         # 3.6 (ticket-granting cookie)
         tgt = generate_ticket_granting_ticket(ticket_username, @extra_attributes)
         response.set_cookie('tgt', tgt.to_s)
-        
-        unless @service.blank?
+        if @ticketing_service
           find_or_generate_service_tickets(ticket_username, tgt)
-          @st = @service_tickets[@service]
-          @service_with_ticket = service_uri_with_ticket(@service, @st)
+          @st = @service_tickets[@ticketing_service]
+          @service_with_ticket = @default_redirect_url ? service_uri_with_ticket(@default_redirect_url, @st) : service_uri_with_ticket(@service, @st)
         end
-
         true
       else
         false
@@ -261,7 +266,7 @@ module Cassy
       # Store this into someticket.username
       # It will get used to find users in client apps
       user = @user || @ticketed_user
-      @cas_client_username = user[settings["client_app_user_field"]] if settings["client_app_user_field"].present? && !!user
+      @cas_client_username = user.send(settings["client_app_user_field"]) if settings["client_app_user_field"].present? && !!user
       @cas_client_username || @username
     end
     
