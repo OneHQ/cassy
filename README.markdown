@@ -52,8 +52,8 @@ These configuration options are detailed here for your convenience. For specific
 * `username_label`: Allows for the "Username" label on the sign in page to be given a different value. Helpful if you want to call it "Email" or "User Name" instead.
 * `client_app_user_field`: Defines the field name for the username on the *client* application side.
 * `service_list`: List of services that use this server to authenticate.
-* `default_service`: If the requested service isn't in the service_list (or is blank) then tickets will be generated for the valid services then the user will be redirected to here. Needs to be specified per environment as per the sample below
-* `loosely_match_services`: If this is set to true, a request for the service http://www.something.com/something_else can be matched to the ticket for http://www.something.com
+* `default_redirect_url`: If the requested service isn't in the service_list (or is blank) then tickets will be generated for the valid services then the user will be redirected to here. Needs to be specified per environment as per the sample below. The default_redirect_url needs to be on the same domain as (at least) one of the urls on the service_list.
+* `loosely_match_services`: If this is set to true, a request for the service http://www.something.com/something_else can be matched to the ticket for http://www.something.com.
 
 
 For your viewing pleasure, here is a sample `cassy.yml` file:
@@ -71,7 +71,7 @@ For your viewing pleasure, here is a sample `cassy.yml` file:
       - http://localhost:3000/users/service
       - http://localhost:3001/users/service
       - http://localhost:3002/users/service
-    default_service:
+    default_redirect_url:
       development: http://localhost:3000
       production: http://www.something.com
     loosely_match_services: true
@@ -97,4 +97,3 @@ By doing this, it will point at the `SessionsController` rather than the default
         super
       end
         
- 

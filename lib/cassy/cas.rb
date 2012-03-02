@@ -76,12 +76,7 @@ module Cassy
     end
 
     def valid_services
-      if @valid_services
-      elsif settings[:loosely_match_services] == true
-        [settings[:service_list]].flatten.map{|s| base_service_url(s) }
-      else
-        settings[:service_list]
-      end
+      @valid_services || settings[:service_list]
     end
 
     def generate_proxy_ticket(target_service, pgt)
