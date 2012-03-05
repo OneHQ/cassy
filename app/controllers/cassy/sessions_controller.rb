@@ -5,22 +5,21 @@ module Cassy
 
 
     def new
-      # optional params
-      @service = clean_service_url(params['service'])
+      setup_from_params!
+      
       @renew = params['renew']
       @gateway = params['gateway'] == 'true' || params['gateway'] == '1'
       if tgc = request.cookies['tgt']
         tgt, tgt_error = validate_ticket_granting_ticket(tgc)
       end
-
+      
       if tgt and !tgt_error
-        flash.now[:notice] = "You are currently logged in as '%s'. If this is not you, please log in below." % ticketed_user(tgt)[settings[:username_field]]
+        flash.now[:notice] = "You are currently logged in as '%s'. If this is not you, please log in below." % ticketed_user(tgt).send(settings[:username_field])
       end
 
       if params['redirection_loop_intercepted']
         flash.now[:error] = "The client and server are unable to negotiate authentication. Please try logging in again later."
       end
-      
         
       begin
         if @service
@@ -29,8 +28,8 @@ module Cassy
             redirect_to_url = @service_with_ticket
           elsif !@renew && tgt && !tgt_error
             find_or_generate_service_tickets(ticket_username, tgt)
-            st = @service_tickets[@service]
-            redirect_to_url = service_uri_with_ticket(@service, st)
+            st = @service_tickets[@ticketing_service]
+            redirect_to_url = service_uri_with_ticket(@ticketing_service, st)
           elsif @gateway
             redirect_to_url = @service
           end
@@ -197,19 +196,17 @@ module Cassy
     end
     
     def setup_from_params!
-      # 2.2.1 (optional)
       @service = params[:service]
-      @requested_service = params[:service]
-
-      @ticketing_service = valid_services.detect{|s| s == @requested_service } || 
-        (settings[:loosely_match_services] == true && valid_services.detect{|s| base_service_url(s) == base_service_url(@requested_service)})
+      # try to find the service in the valid_services list
+      # if loosely_matched_services is true, try to match the base url of the service to one in the valid_services list
+      # if still no luck, check if there is a default_redirect_url that we can use
+      @ticketing_service = valid_services.detect{|s| s == @service } || 
+        (settings[:loosely_match_services] == true && valid_services.detect{|s| base_service_url(s) == base_service_url(@service)})
       if !@ticketing_service && settings[:default_redirect_url] && settings[:default_redirect_url][Rails.env]
         # try to set it to the default_service
         @ticketing_service = valid_services.detect{|s| base_service_url(s) == base_service_url(settings[:default_redirect_url][Rails.env])}
         @default_redirect_url = settings[:default_redirect_url][Rails.env]
       end
-
-      # 2.2.2 (required)
       @username = params[:username].try(:strip)
       @password = params[:password]
       @lt = params['lt']
