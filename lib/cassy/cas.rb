@@ -343,11 +343,11 @@ module Cassy
       # is stripped back to
       # http://www.something.com
       # expects it to be in 'http://x' form
+      return unless full_service_url
       match = full_service_url.match(/(http(s?):\/\/[a-z0-9\.]*)/)
       match && match[0]
     end
     module_function :base_service_url
-    
 
   end
 

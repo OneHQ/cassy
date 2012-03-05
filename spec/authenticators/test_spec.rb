@@ -94,6 +94,17 @@ describe Cassy::Authenticators::Test do
       click_button 'Login'
       page.should_not have_content("Hey you made it to the page of extra content")
     end
+    
+    it "redirects to the default redirect page when the new login page is loaded after already logging in" do
+      Cassy::Engine.config.configuration[:loosely_match_services] = true
+      visit "/cas/login?service="+CGI.escape(@target_service+"/another_page")
+      fill_in 'username', :with => VALID_USERNAME
+      fill_in 'password', :with => VALID_PASSWORD
+      click_button 'Login'
+      # hey that login page was cool, i want to see it again!
+      visit "/cas/login"
+      page.should have_content("You are currently logged in as 'Users Username'. If this is not you, please log in below.")
+    end
 
   end # describe '/login'
 
