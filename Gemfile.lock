@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    cassy (1.1.4)
+    cassy (2.0.0)
       crypt-isaac
       rails (>= 3.0.7)
 

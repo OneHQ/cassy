@@ -19,6 +19,42 @@ module Cassy
 
     belongs_to :granted_by_tgt, :class_name => 'Cassy::TicketGrantingTicket', :foreign_key => :granted_by_tgt_id
     has_one :proxy_granting_ticket, :foreign_key => :created_by_st_id
+    
+    def self.validate(service, ticket, allow_proxy_tickets = false)
+      logger.debug "Validating service/proxy ticket '#{ticket}' for service '#{service}'"
+
+      if service.nil? or ticket.nil?
+        error = Error.new(:INVALID_REQUEST, "Ticket or service parameter was missing in the request.")
+        logger.warn "#{error.code} - #{error.message}"
+      elsif st = ServiceTicket.find_by_ticket(ticket)
+        if st.consumed?
+          error = Error.new(:INVALID_TICKET, "Ticket '#{ticket}' has already been used up.")
+          logger.warn "#{error.code} - #{error.message}"
+        elsif st.kind_of?(Cassy::ProxyTicket) && !allow_proxy_tickets
+          error = Error.new(:INVALID_TICKET, "Ticket '#{ticket}' is a proxy ticket, but only service tickets are allowed here.")
+          logger.warn "#{error.code} - #{error.message}"
+        elsif Time.now - st.created_on > Cassy.config[:maximum_unused_service_ticket_lifetime]
+          error = Error.new(:INVALID_TICKET, "Ticket '#{ticket}' has expired.")
+          logger.warn "Ticket '#{ticket}' has expired."
+        elsif !st.matches_service? service
+          error = Error.new(:INVALID_SERVICE, "The ticket '#{ticket}' belonging to user '#{st.username}' is valid,"+
+            " but the requested service '#{service}' does not match the service '#{st.service}' associated with this ticket.")
+          logger.warn "#{error.code} - #{error.message}"
+        else
+          logger.info("Ticket '#{ticket}' for service '#{service}' for user '#{st.username}' successfully validated.")
+        end
+      else
+        error = Error.new(:INVALID_TICKET, "Ticket '#{ticket}' not recognized.")
+        logger.warn("#{error.code} - #{error.message}")
+      end
+
+      if st
+        st.consume!
+      end
+
+      [st, error]
+    end
+    
 
     def matches_service?(service)
       if Cassy.config[:loosely_match_services] == true
@@ -27,5 +63,36 @@ module Cassy
         Cassy::CAS.clean_service_url(self.service) == Cassy::CAS.clean_service_url(service)
       end
     end
+    
+    # Takes an existing ServiceTicket object (presumably pulled from the database)
+    # and sends a POST with logout information to the service that the ticket
+    # was generated for.
+    #
+    # This makes possible the "single sign-out" functionality added in CAS 3.1.
+    # See http://www.ja-sig.org/wiki/display/CASUM/Single+Sign+Out
+    def self.send_logout_notification(st)
+      uri = URI.parse(st.service)
+      uri.path = '/' if uri.path.empty?
+      time = Time.now
+      rand = Cassy::Utils.random_string
+
+      begin
+        response = Net::HTTP.post_form(uri, {'logoutRequest' => URI.escape(%{<samlp:LogoutRequest ID="#{rand}" Version="2.0" IssueInstant="#{time.rfc2822}">
+          <saml:NameID></saml:NameID>
+          <samlp:SessionIndex>#{st.ticket}</samlp:SessionIndex>
+          </samlp:LogoutRequest>})})
+        if response.kind_of? Net::HTTPSuccess
+          logger.info "Logout notification successfully posted to #{st.service.inspect}."
+          return true
+        else
+          logger.error "Service #{st.service.inspect} responed to logout notification with code '#{response.code}'!"
+          return false
+        end
+      rescue Exception => e
+        logger.error "Failed to send logout notification to service #{st.service.inspect} due to #{e}"
+        return false
+      end
+    end
+    
   end
 end

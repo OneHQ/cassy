@@ -138,33 +138,6 @@ module Cassy
       end
     end
 
-    def validate_login_ticket(ticket)
-      logger.debug("Validating login ticket '#{ticket}'")
-      
-      success = false
-      if ticket.nil?
-        error = "Your login request did not include a login ticket. There may be a problem with the authentication system."
-        logger.warn "Missing login ticket."
-      elsif lt = LoginTicket.find_by_ticket(ticket)
-        if lt.consumed?
-          error = "The login ticket you provided has already been used up. Please try logging in again."
-          logger.warn "Login ticket '#{ticket}' previously used up"
-        elsif Time.now - lt.created_on < settings[:maximum_unused_login_ticket_lifetime]
-          logger.info "Login ticket '#{ticket}' successfully validated"
-        else
-          error = "You took too long to enter your credentials. Please try again."
-          logger.warn "Expired login ticket '#{ticket}'"
-        end
-      else
-        error = "The login ticket you provided is invalid. There may be a problem with the authentication system."
-        logger.warn "Invalid login ticket '#{ticket}'"
-      end
-
-      lt.consume! if lt && !error.blank?
-
-      error
-    end
-
     def validate_ticket_granting_ticket(ticket)
       logger.debug("Validating ticket granting ticket '#{ticket}'")
 
@@ -187,113 +160,12 @@ module Cassy
       [tgt, error]
     end
 
-    def validate_service_ticket(service, ticket, allow_proxy_tickets = false)
-      logger.debug "Validating service/proxy ticket '#{ticket}' for service '#{service}'"
-
-      if service.nil? or ticket.nil?
-        error = Error.new(:INVALID_REQUEST, "Ticket or service parameter was missing in the request.")
-        logger.warn "#{error.code} - #{error.message}"
-      elsif st = ServiceTicket.find_by_ticket(ticket)
-        if st.consumed?
-          error = Error.new(:INVALID_TICKET, "Ticket '#{ticket}' has already been used up.")
-          logger.warn "#{error.code} - #{error.message}"
-        elsif st.kind_of?(Cassy::ProxyTicket) && !allow_proxy_tickets
-          error = Error.new(:INVALID_TICKET, "Ticket '#{ticket}' is a proxy ticket, but only service tickets are allowed here.")
-          logger.warn "#{error.code} - #{error.message}"
-        elsif Time.now - st.created_on > settings[:maximum_unused_service_ticket_lifetime]
-          error = Error.new(:INVALID_TICKET, "Ticket '#{ticket}' has expired.")
-          logger.warn "Ticket '#{ticket}' has expired."
-        elsif !st.matches_service? service
-          error = Error.new(:INVALID_SERVICE, "The ticket '#{ticket}' belonging to user '#{st.username}' is valid,"+
-            " but the requested service '#{service}' does not match the service '#{st.service}' associated with this ticket.")
-          logger.warn "#{error.code} - #{error.message}"
-        else
-          logger.info("Ticket '#{ticket}' for service '#{service}' for user '#{st.username}' successfully validated.")
-        end
-      else
-        error = Error.new(:INVALID_TICKET, "Ticket '#{ticket}' not recognized.")
-        logger.warn("#{error.code} - #{error.message}")
-      end
-
-      if st
-        st.consume!
-      end
-
-
-      [st, error]
-    end
-
-    def validate_proxy_ticket(service, ticket)
-      pt, error = validate_service_ticket(service, ticket, true)
-
-      if pt.kind_of?(Cassy::ProxyTicket) && !error
-        if not pt.granted_by_pgt
-          error = Error.new(:INTERNAL_ERROR, "Proxy ticket '#{pt}' belonging to user '#{pt.username}' is not associated with a proxy granting ticket.")
-        elsif not pt.granted_by_pgt.service_ticket
-          error = Error.new(:INTERNAL_ERROR, "Proxy granting ticket '#{pt.granted_by_pgt}'"+
-            " (associated with proxy ticket '#{pt}' and belonging to user '#{pt.username}' is not associated with a service ticket.")
-        end
-      end
-
-      [pt, error]
-    end
-
-    def validate_proxy_granting_ticket(ticket)
-      if ticket.nil?
-        error = Error.new(:INVALID_REQUEST, "pgt parameter was missing in the request.")
-        logger.warn("#{error.code} - #{error.message}")
-      elsif pgt = ProxyGrantingTicket.find_by_ticket(ticket)
-        if pgt.service_ticket
-          logger.info("Proxy granting ticket '#{ticket}' belonging to user '#{pgt.service_ticket.username}' successfully validated.")
-        else
-          error = Error.new(:INTERNAL_ERROR, "Proxy granting ticket '#{ticket}' is not associated with a service ticket.")
-          logger.error("#{error.code} - #{error.message}")
-        end
-      else
-        error = Error.new(:BAD_PGT, "Invalid proxy granting ticket '#{ticket}' (no matching ticket found in the database).")
-        logger.warn("#{error.code} - #{error.message}")
-      end
-
-      [pgt, error]
-    end
-
-    # Takes an existing ServiceTicket object (presumably pulled from the database)
-    # and sends a POST with logout information to the service that the ticket
-    # was generated for.
-    #
-    # This makes possible the "single sign-out" functionality added in CAS 3.1.
-    # See http://www.ja-sig.org/wiki/display/CASUM/Single+Sign+Out
-    def send_logout_notification_for_service_ticket(st)
-      uri = URI.parse(st.service)
-      uri.path = '/' if uri.path.empty?
-      time = Time.now
-      rand = Cassy::Utils.random_string
-
-      begin
-        response = Net::HTTP.post_form(uri, {'logoutRequest' => URI.escape(%{<samlp:LogoutRequest ID="#{rand}" Version="2.0" IssueInstant="#{time.rfc2822}">
-          <saml:NameID></saml:NameID>
-          <samlp:SessionIndex>#{st.ticket}</samlp:SessionIndex>
-          </samlp:LogoutRequest>})})
-        if response.kind_of? Net::HTTPSuccess
-          logger.info "Logout notification successfully posted to #{st.service.inspect}."
-          return true
-        else
-          logger.error "Service #{st.service.inspect} responed to logout notification with code '#{response.code}'!"
-          return false
-        end
-      rescue Exception => e
-        logger.error "Failed to send logout notification to service #{st.service.inspect} due to #{e}"
-        return false
-      end
-    end
-
     def service_uri_with_ticket(service, st)
       raise ArgumentError, "Second argument must be a ServiceTicket!" unless st.kind_of? Cassy::ServiceTicket
 
       # This will choke with a URI::InvalidURIError if service URI is not properly URI-escaped...
       # This exception is handled further upstream (i.e. in the controller).
       service_uri = URI.parse(service)
-
       if service.include? "?"
         if service_uri.query.empty?
           query_separator = ""
@@ -344,10 +216,91 @@ module Cassy
       # http://www.something.com
       # expects it to be in 'http://x' form
       return unless full_service_url
-      match = full_service_url.match(/(http(s?):\/\/[a-z0-9\.]*)/)
+      match = full_service_url.match(/(http(s?):\/\/[a-z0-9\.:]*)/)
       match && match[0]
     end
     module_function :base_service_url
+    
+    def detect_ticketing_service(service)
+      # try to find the service in the valid_services list
+      # if loosely_matched_services is true, try to match the base url of the service to one in the valid_services list
+      # if still no luck, check if there is a default_redirect_url that we can use
+      @service||= service
+      @ticketing_service||= valid_services.detect{|s| s == @service } || 
+        (settings[:loosely_match_services] == true && valid_services.detect{|s| base_service_url(s) == base_service_url(@service)})
+      if !@ticketing_service && settings[:default_redirect_url] && settings[:default_redirect_url][Rails.env]
+        # try to set it to the default_service
+        @ticketing_service = valid_services.detect{|s| base_service_url(s) == base_service_url(settings[:default_redirect_url][Rails.env])}
+        @default_redirect_url||= settings[:default_redirect_url][Rails.env]
+      end
+      @username||= params[:username].try(:strip)
+      @password||= params[:password]
+      @lt||= params['lt']
+    end
+    module_function :detect_ticketing_service
+    
+    def cas_login
+      if valid_credentials?
+        # 3.6 (ticket-granting cookie)
+        tgt = generate_ticket_granting_ticket(ticket_username, @extra_attributes)
+        response.set_cookie('tgt', tgt.to_s)
+        if @ticketing_service
+          find_or_generate_service_tickets(ticket_username, tgt)
+          @st = @service_tickets[@ticketing_service]
+          @service_with_ticket = @service.blank? ? service_uri_with_ticket(@default_redirect_url, @st) : service_uri_with_ticket(@service, @st)
+        end
+        true
+      else
+        false
+      end
+    end
+    module_function :cas_login
+    
+    # Initializes authenticator, returns true / false depending on if user credentials are accurate
+    def valid_credentials?
+      detect_ticketing_service(params[:service])
+      @extra_attributes = {}
+      # Should probably be moved out of the request cycle and into an after init hook on the engine
+
+      credentials = { :username => @username,
+                      :password => @password,
+                      :service  => @service,
+                      :request  => @env
+                    }
+      @user = authenticator.find_user(credentials) || authenticator.find_user(:username => session[:username])
+      valid = ((@user == @ticketed_user) || authenticator.validate(credentials))# || !!@user
+      if valid
+        authenticator.extra_attributes_to_extract.each do |attr|
+          @extra_attributes[attr] = @user.send(attr)
+        end
+      end
+      return valid
+    end
+    module_function :valid_credentials?
+    
+    protected
+
+    def ticket_username
+      # Store this into someticket.username
+      # It will get used to find users in client apps
+      user = @user || @ticketed_user
+      @cas_client_username = user.send(settings["client_app_user_field"]) if settings["client_app_user_field"].present? && !!user
+      @cas_client_username || @username
+    end
+    
+    def ticketed_user(ticket)
+      # Find the SSO's instance of the user
+      @ticketed_user ||= authenticator.find_user_from_ticket(ticket)
+    end
+
+    def authenticator
+      unless @authenticator
+        auth_settings = Cassy.config["authenticator"]
+        @authenticator ||= auth_settings["class"].constantize
+        @authenticator.configure(auth_settings)
+      end
+      @authenticator
+    end
 
   end
 
