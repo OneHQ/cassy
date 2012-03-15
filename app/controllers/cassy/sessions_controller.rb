@@ -8,8 +8,8 @@ module Cassy
       
       @renew = params['renew']
       @gateway = params['gateway'] == 'true' || params['gateway'] == '1'
+      @hostname = env['HTTP_X_FORWARDED_FOR'] || env['REMOTE_HOST'] || env['REMOTE_ADDR']
       tgt, tgt_error = Cassy::TicketGrantingTicket.validate(request.cookies['tgt'])
-      
       if tgt && !tgt_error
         flash.now[:notice] = "You are currently logged in as '%s'. If this is not you, please log in below." % ticketed_user(tgt).send(settings[:username_field])
       end
@@ -38,6 +38,7 @@ module Cassy
     def create
       @lt = generate_login_ticket.ticket # in case the login isn't successful, another ticket needs to be generated for the next attempt at login
       detect_ticketing_service(params[:service])
+      @hostname = env['HTTP_X_FORWARDED_FOR'] || env['REMOTE_HOST'] || env['REMOTE_ADDR']
       consume_ticket = Cassy::LoginTicket.validate(@lt)
       if !consume_ticket[:valid]
         flash.now[:error] = consume_ticket[:error]
@@ -111,7 +112,7 @@ module Cassy
           pgt = generate_proxy_granting_ticket(@pgt_url, st)
           @pgtiou = pgt.iou if pgt
         end
-        @extra_attributes = st.granted_by_tgt.extra_attributes || {}
+        @extra_attributes = st.granted_by_tgt ? st.granted_by_tgt.extra_attributes : {}
       else
         status = response_status_from_error(@error) if @error
       end

@@ -8,19 +8,6 @@ require 'cassy/utils'
 # the Cassy::Controllers module.
 module Cassy
   module CAS
-
-    class Error
-      attr_reader :code, :message
-
-      def initialize(code, message)
-        @code = code
-        @message = message
-      end
-
-      def to_s
-        message
-      end
-    end
     
     def settings
       Cassy.config
@@ -37,41 +24,10 @@ module Cassy
       lt
     end
 
-    # Creates a TicketGrantingTicket for the given username. This is done when the user logs in
-    # for the first time to establish their SSO session (after their credentials have been validated).
-    #
-    # The optional 'extra_attributes' parameter takes a hash of additional attributes
-    # that will be sent along with the username in the CAS response to subsequent
-    # validation requests from clients.
-    def generate_ticket_granting_ticket(username, extra_attributes={})
-      # 3.6 (ticket granting cookie/ticket)
-      tgt = Cassy::TicketGrantingTicket.new
-      tgt.ticket = "TGC-" + Cassy::Utils.random_string
-      tgt.username = username
-      tgt.extra_attributes = extra_attributes
-      tgt.client_hostname = env['HTTP_X_FORWARDED_FOR'] || env['REMOTE_HOST'] || env['REMOTE_ADDR']
-      tgt.save!
-      tgt
-    end
-
-    def generate_service_ticket(service, username, tgt)
-      # 3.1 (service ticket)
-      st = ServiceTicket.new
-      st.ticket = "ST-" + Cassy::Utils.random_string
-      st.service = service
-      st.username = username
-      st.granted_by_tgt_id = tgt.id
-      st.client_hostname = env['HTTP_X_FORWARDED_FOR'] || env['REMOTE_HOST'] || env['REMOTE_ADDR']
-      st.save!
-      logger.debug("Generated service ticket '#{st.ticket}' for service '#{st.service}'" +
-        " for user '#{st.username}' at '#{st.client_hostname}'")
-      st
-    end
-
-    def find_or_generate_service_tickets(username, tgt)
+    def find_or_generate_service_tickets(username, tgt, hostname)
       @service_tickets={}
       valid_services.each do |service|
-        @service_tickets[service] = generate_service_ticket(service, username, tgt)
+        @service_tickets[service] = Cassy::ServiceTicket.generate(service, username, tgt, hostname)
       end
     end
 
@@ -136,28 +92,6 @@ module Cassy
           nil
         end
       end
-    end
-
-    def validate_ticket_granting_ticket(ticket)
-      logger.debug("Validating ticket granting ticket '#{ticket}'")
-
-      if ticket.nil?
-        error = "No ticket granting ticket given."
-        logger.debug error
-      elsif tgt = TicketGrantingTicket.find_by_ticket(ticket)
-        if settings[:maximum_session_lifetime] && Time.now - tgt.created_on > settings[:maximum_session_lifetime]
-  	tgt.destroy
-          error = "Your session has expired. Please log in again."
-          logger.info "Ticket granting ticket '#{ticket}' for user '#{tgt.username}' expired."
-        else
-          logger.info "Ticket granting ticket '#{ticket}' for user '#{tgt.username}' successfully validated."
-        end
-      else
-        error = "Invalid ticket granting ticket '#{ticket}' (no matching ticket found in the database)."
-        logger.warn(error)
-      end
-
-      [tgt, error]
     end
 
     def service_uri_with_ticket(service, st)
@@ -242,12 +176,12 @@ module Cassy
     def cas_login
       if valid_credentials?
         # 3.6 (ticket-granting cookie)
-        tgt = generate_ticket_granting_ticket(ticket_username, @extra_attributes)
+        tgt = Cassy::TicketGrantingTicket.generate(ticket_username, @extra_attributes, @hostname)
         response.set_cookie('tgt', tgt.to_s)
         if @ticketing_service
-          find_or_generate_service_tickets(ticket_username, tgt)
+          find_or_generate_service_tickets(ticket_username, tgt, @hostname)
           @st = @service_tickets[@ticketing_service]
-          @service_with_ticket = @service.blank? ? service_uri_with_ticket(@default_redirect_url, @st) : service_uri_with_ticket(@service, @st)
+          @service_with_ticket = (@service.blank? || @default_redirect_url) ? service_uri_with_ticket(@default_redirect_url, @st) : service_uri_with_ticket(@service, @st)
         end
         true
       else

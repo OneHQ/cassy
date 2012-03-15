@@ -29,6 +29,23 @@ module Cassy
 
       [tgt, error]
     end
+    
+    # Creates a TicketGrantingTicket for the given username. This is done when the user logs in
+    # for the first time to establish their SSO session (after their credentials have been validated).
+    #
+    # The optional 'extra_attributes' parameter takes a hash of additional attributes
+    # that will be sent along with the username in the CAS response to subsequent
+    # validation requests from clients.
+    def self.generate(username, extra_attributes={}, hostname)
+      # 3.6 (ticket granting cookie/ticket)
+      tgt = Cassy::TicketGrantingTicket.new
+      tgt.ticket = "TGC-" + Cassy::Utils.random_string
+      tgt.username = username
+      tgt.extra_attributes = extra_attributes
+      tgt.client_hostname = hostname
+      tgt.save!
+      tgt
+    end
       
   end
 end

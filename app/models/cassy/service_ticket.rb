@@ -23,7 +23,7 @@ module Cassy
     def self.validate(service, ticket, allow_proxy_tickets = false)
       logger.debug "Validating service/proxy ticket '#{ticket}' for service '#{service}'"
 
-      if service.nil? or ticket.nil?
+      if service.nil?
         error = Error.new(:INVALID_REQUEST, "Ticket or service parameter was missing in the request.")
         logger.warn "#{error.code} - #{error.message}"
       elsif st = ServiceTicket.find_by_ticket(ticket)
@@ -37,7 +37,7 @@ module Cassy
           error = Error.new(:INVALID_TICKET, "Ticket '#{ticket}' has expired.")
           logger.warn "Ticket '#{ticket}' has expired."
         elsif !st.matches_service? service
-          error = Error.new(:INVALID_SERVICE, "The ticket '#{ticket}' belonging to user '#{st.username}' is valid,"+
+          error = Error.new(:INVALID_SERVICE, :message => "The ticket '#{ticket}' belonging to user '#{st.username}' is valid,"+
             " but the requested service '#{service}' does not match the service '#{st.service}' associated with this ticket.")
           logger.warn "#{error.code} - #{error.message}"
         else
@@ -47,7 +47,6 @@ module Cassy
         error = Error.new(:INVALID_TICKET, "Ticket '#{ticket}' not recognized.")
         logger.warn("#{error.code} - #{error.message}")
       end
-
       if st
         st.consume!
       end
@@ -92,6 +91,20 @@ module Cassy
         logger.error "Failed to send logout notification to service #{st.service.inspect} due to #{e}"
         return false
       end
+    end
+    
+    def self.generate(service, username, tgt, hostname)
+      # 3.1 (service ticket)
+      st = ServiceTicket.new
+      st.ticket = "ST-" + Cassy::Utils.random_string
+      st.service = service
+      st.username = username
+      st.granted_by_tgt_id = tgt.id
+      st.client_hostname = hostname
+      st.save!
+      logger.debug("Generated service ticket '#{st.ticket}' for service '#{st.service}'" +
+        " for user '#{st.username}' at '#{st.client_hostname}'")
+      st
     end
     
   end
