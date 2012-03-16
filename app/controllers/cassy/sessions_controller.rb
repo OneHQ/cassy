@@ -11,7 +11,7 @@ module Cassy
       @hostname = env['HTTP_X_FORWARDED_FOR'] || env['REMOTE_HOST'] || env['REMOTE_ADDR']
       tgt, tgt_error = Cassy::TicketGrantingTicket.validate(request.cookies['tgt'])
       if tgt
-        flash.now[:notice] = "You are currently logged in as '%s'. If this is not you, please log in below." % ticketed_user(tgt).send(settings[:username_field])
+        flash.now[:notice] = "You are currently logged in as '%s'." % ticketed_user(tgt).send(settings[:username_field])
       end
 
       if params['redirection_loop_intercepted']
@@ -113,10 +113,8 @@ module Cassy
           @pgtiou = pgt.iou if pgt
         end
         @extra_attributes = @service_ticket.granted_by_tgt ? @service_ticket.granted_by_tgt.extra_attributes : {}
-      else
-        status = response_status_from_error(error) if error
       end
-      render :proxy_validate, :layout => false, :status => status || 200
+      render :proxy_validate, :layout => false, :status => @service_ticket ? 200 : 422
     end
     
     def proxy_validate
@@ -129,43 +127,28 @@ module Cassy
 
       @proxies = []
 
-      t, @error = Cassy::ProxyTicket.validate(@service, @ticket)
-      @success = t && !@error
-
+      @service_ticket, @error = Cassy::ServiceTicket.validate(@service, @ticket)
       @extra_attributes = {}
-      if @success
+      if @service_ticket
         @username = ticketed_user(t)[settings[:cas_app_user_filed]]
 
-        if t.kind_of? Cassy::ProxyTicket
+        if @service_ticket.kind_of? Cassy::ProxyTicket
           @proxies << t.granted_by_pgt.service_ticket.service
         end
 
         if @pgt_url
-          pgt = generate_proxy_granting_ticket(@pgt_url, t)
+          pgt = generate_proxy_granting_ticket(@pgt_url, @service_ticket)
           @pgtiou = pgt.iou if pgt
         end
 
-        @extra_attributes = t.granted_by_tgt.extra_attributes || {}
+        @extra_attributes = @service_ticket.granted_by_tgt ? @service_ticket.granted_by_tgt.extra_attributes : {}
       end
 
-      status = response_status_from_error(@error) if @error
-
-      render :proxy_validate, :layout => false, :status => status || 200
+      render :proxy_validate, :layout => false, :status => @service_ticket ? 200 : 422
       
     end
     
     private
-    
-    def response_status_from_error(error)
-      case error.code.to_s
-      when /^INVALID_/, 'BAD_PGT'
-        422
-      when 'INTERNAL_ERROR'
-        500
-      else
-        500
-      end
-    end
     
     def incorrect_credentials!
       @lt = generate_login_ticket.ticket
