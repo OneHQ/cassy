@@ -103,7 +103,7 @@ describe Cassy::Authenticators::Test do
       click_button 'Login'
       # hey that login page was cool, i want to see it again!
       visit "/cas/login"
-      page.should have_content("You are currently logged in as 'Users Username'. If this is not you, please log in below.")
+      page.should have_content("You are currently logged in as 'Users Username'.")
     end
 
   end # describe '/login'
@@ -142,6 +142,7 @@ describe Cassy::Authenticators::Test do
     it "should have extra attributes in proper format" do
       Cassy::Engine.config.configuration[:extra_attributes] = [{ :user => :full_name }]
       visit "/cas/serviceValidate?service=#{CGI.escape(@target_service)}&ticket=#{@ticket}"
+      
       page.body.should match("<full_name>Example User</full_name>")
     end
   end
