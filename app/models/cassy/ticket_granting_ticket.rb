@@ -12,22 +12,17 @@ module Cassy
       
     def self.validate(ticket)
       if ticket.nil?
-        error = "No ticket granting ticket given."
-        logger.debug error
+        [nil, "No ticket provided."]
       elsif tgt = TicketGrantingTicket.find_by_ticket(ticket)
-        if Cassy.config[:maximum_session_lifetime] && Time.now - tgt.created_on > Cassy.config[:maximum_session_lifetime]
+        if Cassy.config[:maximum_session_lifetime] && Time.now - Cassy.config[:maximum_session_lifetime] > tgt.created_on
   	      tgt.destroy
-          error = "Your session has expired. Please log in again."
-          logger.info "Ticket granting ticket '#{ticket}' for user '#{tgt.username}' expired."
+  	      [nil, "Ticket TGT-12345678901234567890 has expired. Please log in again."]
         else
-          logger.info "Ticket granting ticket '#{ticket}' for user '#{tgt.username}' successfully validated."
+          [tgt, "Ticket granting ticket '#{ticket}' for user '#{tgt.username}' successfully validated."]
         end
       else
-        error = "Invalid ticket granting ticket '#{ticket}' (no matching ticket found in the database)."
-        logger.warn(error)
+        [nil, "Ticket '#{ticket}' not recognized."]
       end
-
-      [tgt, error]
     end
     
     # Creates a TicketGrantingTicket for the given username. This is done when the user logs in

@@ -10,7 +10,7 @@ module Cassy
       @gateway = params['gateway'] == 'true' || params['gateway'] == '1'
       @hostname = env['HTTP_X_FORWARDED_FOR'] || env['REMOTE_HOST'] || env['REMOTE_ADDR']
       tgt, tgt_error = Cassy::TicketGrantingTicket.validate(request.cookies['tgt'])
-      if tgt && !tgt_error
+      if tgt
         flash.now[:notice] = "You are currently logged in as '%s'. If this is not you, please log in below." % ticketed_user(tgt).send(settings[:username_field])
       end
 
@@ -103,18 +103,18 @@ module Cassy
       @ticket = params['ticket']
       # optional
       @renew = params['renew']
+      @pgt_url = params['pgtUrl']
 
-      st, @error = Cassy::ServiceTicket.validate(@service, @ticket)
-      @success = st && !@error
-      if @success
-        @username = ticketed_user(st).send(settings[:client_app_user_field])
+      @service_ticket, @error = Cassy::ServiceTicket.validate(@service, @ticket)
+      if @service_ticket
+        @username = ticketed_user(@service_ticket).send(settings[:client_app_user_field])
         if @pgt_url
-          pgt = generate_proxy_granting_ticket(@pgt_url, st)
+          pgt = generate_proxy_granting_ticket(@pgt_url, @service_ticket)
           @pgtiou = pgt.iou if pgt
         end
-        @extra_attributes = st.granted_by_tgt ? st.granted_by_tgt.extra_attributes : {}
+        @extra_attributes = @service_ticket.granted_by_tgt ? @service_ticket.granted_by_tgt.extra_attributes : {}
       else
-        status = response_status_from_error(@error) if @error
+        status = response_status_from_error(error) if error
       end
       render :proxy_validate, :layout => false, :status => status || 200
     end

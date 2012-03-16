@@ -21,37 +21,33 @@ module Cassy
     has_one :proxy_granting_ticket, :foreign_key => :created_by_st_id
     
     def self.validate(service, ticket, allow_proxy_tickets = false)
-      logger.debug "Validating service/proxy ticket '#{ticket}' for service '#{service}'"
+      logger.debug "Validating service ticket '#{ticket}' for service '#{service}'"
 
       if service.nil?
-        error = Error.new(:INVALID_REQUEST, "Ticket or service parameter was missing in the request.")
-        logger.warn "#{error.code} - #{error.message}"
-      elsif st = ServiceTicket.find_by_ticket(ticket)
+        logger.warn "Service not provided to validate service ticket"
+        [nil, "Ticket or service parameter was missing in the request"]
+      elsif st = Cassy::ServiceTicket.find_by_ticket(ticket)
         if st.consumed?
-          error = Error.new(:INVALID_TICKET, "Ticket '#{ticket}' has already been used up.")
-          logger.warn "#{error.code} - #{error.message}"
+          logger.warn "Ticket #{ticket} has already been used"
+          [nil, "Ticket #{ticket} has already been consumed."]
         elsif st.kind_of?(Cassy::ProxyTicket) && !allow_proxy_tickets
-          error = Error.new(:INVALID_TICKET, "Ticket '#{ticket}' is a proxy ticket, but only service tickets are allowed here.")
-          logger.warn "#{error.code} - #{error.message}"
+          logger.warn "Ticket '#{ticket}' is a proxy ticket, but only service tickets are allowed here."
+          [nil, "Ticket '#{ticket}' is a proxy ticket, but only service tickets are allowed here."]
         elsif Time.now - st.created_on > Cassy.config[:maximum_unused_service_ticket_lifetime]
-          error = Error.new(:INVALID_TICKET, "Ticket '#{ticket}' has expired.")
-          logger.warn "Ticket '#{ticket}' has expired."
+          logger.warn "Ticket #{ticket} has expired."
+          [nil, "Ticket #{ticket} has expired. Please try again."]
         elsif !st.matches_service? service
-          error = Error.new(:INVALID_SERVICE, :message => "The ticket '#{ticket}' belonging to user '#{st.username}' is valid,"+
-            " but the requested service '#{service}' does not match the service '#{st.service}' associated with this ticket.")
-          logger.warn "#{error.code} - #{error.message}"
+          logger.warn "The ticket #{ticket} belonging to user #{st.username} is valid but the requested service #{service} doesn't match the service #{st.service} associated with the ticket."
+          [nil, "The ticket #{ticket} belonging to user #{st.username} is valid but the requested service #{service} doesn't match the service #{st.service} associated with the ticket."]
         else
+          st.consume!
           logger.info("Ticket '#{ticket}' for service '#{service}' for user '#{st.username}' successfully validated.")
+          [st, "Ticket '#{ticket}' for '#{service}' for user '#{st.username}' successfully validted."]
         end
       else
-        error = Error.new(:INVALID_TICKET, "Ticket '#{ticket}' not recognized.")
-        logger.warn("#{error.code} - #{error.message}")
+        logger.warn "Ticket '#{ticket}' not recognized."
+        [nil, "Ticket '#{ticket}' not recognized."]
       end
-      if st
-        st.consume!
-      end
-
-      [st, error]
     end
     
 

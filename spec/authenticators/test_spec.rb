@@ -142,6 +142,7 @@ describe Cassy::Authenticators::Test do
     it "should have extra attributes in proper format" do
       Cassy::Engine.config.configuration[:extra_attributes] = [{ :user => :full_name }]
       visit "/cas/serviceValidate?service=#{CGI.escape(@target_service)}&ticket=#{@ticket}"
+      
       page.body.should match("<full_name>Example User</full_name>")
     end
   end
