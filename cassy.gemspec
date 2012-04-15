@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
   s.authors = ["ryan bigg","geoff@reinteractive.net"]
   s.description = "An engine that provides a CAS server to the application it's included within."
   s.files = Dir["lib/**/*"] + ["MIT-LICENSE", "Rakefile", "README.markdown"]
-  s.version = "2.0.1"
+  s.version = "2.0.2"
 
   s.add_dependency 'crypt-isaac'
   s.add_dependency 'rails', '>= 3.0.7'
