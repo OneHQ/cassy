@@ -49,7 +49,7 @@ module Cassy
       logger.debug("Logging in with username: #{@username}, lt: #{@lt}, service: #{@service}, auth: #{settings[:auth].inspect}")
       if cas_login
         if @ticketing_service
-          redirect_to @service_with_ticket, :status => 303 if @service_with_ticket# response code 303 means "See Other" (see Appendix B in CAS Protocol spec)
+          redirect_to after_sign_in_path_for(@service_with_ticket)
         else
           flash.now[:notice] = "You have successfully logged in."
           render :new
