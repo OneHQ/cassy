@@ -32,7 +32,7 @@ module Cassy
     end
 
     def valid_services
-      @valid_services || settings[:service_list]
+      @valid_services || settings[:service_list][Rails.env]
     end
 
     def generate_proxy_ticket(target_service, pgt)
