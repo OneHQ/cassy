@@ -105,8 +105,17 @@ describe Cassy::Authenticators::Test do
       visit "/cas/login"
       page.should have_content("You are currently logged in as 'Users Username'.")
     end
+    
+    it "fails to log in when neither the user and ticketed_user are set" do
+      Cassy::Authenticators::Test.stub!(:find_user).and_return(nil)
+      visit "/cas/login?service="+CGI.escape(@target_service)
+      fill_in 'username', :with => "something"
+      fill_in 'password', :with => INVALID_PASSWORD
+      click_button 'Login'
+      page.should have_content("Incorrect username or password")
+    end
 
-  end # describe '/login'
+  end
 
 
   describe '/logout' do

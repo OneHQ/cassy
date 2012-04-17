@@ -202,13 +202,12 @@ module Cassy
                       :request  => @env
                     }
       @user = authenticator.find_user(credentials) || authenticator.find_user(:username => session[:username])
-      valid = ((@user == @ticketed_user) || authenticator.validate(credentials))# || !!@user
-      if valid
+      valid = ((@user == @ticketed_user) || authenticator.validate(credentials)) && !!@user
+      if valid && @user
         authenticator.extra_attributes_to_extract.each do |attr|
           @extra_attributes[attr] = @user.send(attr)
         end
       end
-      session[:username] = @user.username
       return valid
     end
     module_function :valid_credentials?
