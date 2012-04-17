@@ -208,7 +208,6 @@ module Cassy
           @extra_attributes[attr] = @user.send(attr)
         end
       end
-      session[:username] = @user.username unless !@user
       return valid
     end
     module_function :valid_credentials?
