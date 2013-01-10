@@ -1,6 +1,5 @@
 require 'spec_helper'
 require 'rubygems'
-require 'ruby-debug'
 
 describe Cassy::Authenticators::Devise do
   before(:all) do
