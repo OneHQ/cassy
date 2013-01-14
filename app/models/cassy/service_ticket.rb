@@ -2,7 +2,7 @@ module Cassy
   class ServiceTicket < ActiveRecord::Base
 	include Cassy::Ticket
 
-    set_table_name 'casserver_st'
+    self.table_name = 'casserver_st'
 
     # Need to confirm the before_save function is actually needed. Seems that every
     # instance of this type (in 130000 rows) has the same value of "Cassy::ServiceTicket"
