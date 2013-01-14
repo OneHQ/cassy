@@ -130,7 +130,7 @@ module Cassy
       @service_ticket, @error = Cassy::ServiceTicket.validate(@service, @ticket)
       @extra_attributes = {}
       if @service_ticket
-        @username = ticketed_user(@service_ticket)[settings[:client_app_user_field]]
+        @username = ticketed_user(@service_ticket).send(settings[:client_app_user_field])
 
         if @service_ticket.kind_of? Cassy::ProxyTicket
           @proxies << t.granted_by_pgt.service_ticket.service

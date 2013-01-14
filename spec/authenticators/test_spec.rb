@@ -134,7 +134,7 @@ describe Cassy::Authenticators::Test do
 
   end # describe '/logout'
 
-  describe "proxyValidate" do
+  describe "serviceValidate" do
     before do
 
       visit "/cas/login?service="+CGI.escape(@target_service)
@@ -155,4 +155,27 @@ describe Cassy::Authenticators::Test do
       page.body.should match("<full_name>Example User</full_name>")
     end
   end
+
+  describe "proxyValidate" do
+    before do
+
+      visit "/cas/login?service="+CGI.escape(@target_service)
+
+      fill_in 'username', :with => VALID_USERNAME
+      fill_in 'Password', :with => VALID_PASSWORD
+
+      click_button 'Login'
+
+      page.current_url.should =~ /^#{Regexp.escape(@target_service)}\/?\?ticket=ST\-[1-9rA-Z]+/
+      @ticket = page.current_url.match(/ticket=(.*)$/)[1]
+    end
+
+    it "should have extra attributes in proper format" do
+      Cassy::Engine.config.configuration[:extra_attributes] = [{ :user => :full_name }]
+      visit "/cas/proxyValidate?service=#{CGI.escape(@target_service)}&ticket=#{@ticket}"
+      
+      page.body.should match("<full_name>Example User</full_name>")
+    end
+  end
+
 end
