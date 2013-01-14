@@ -1,7 +1,7 @@
 module Cassy
   class TicketGrantingTicket < ActiveRecord::Base
   	include Cassy::Ticket
-    set_table_name 'casserver_tgt'
+    self.table_name = 'casserver_tgt'
 
     serialize :extra_attributes
 
