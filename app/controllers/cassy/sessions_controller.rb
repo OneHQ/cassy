@@ -81,6 +81,12 @@ module Cassy
           pgts.each do |pgt|
             pgt.destroy
           end
+          if Cassy.config[:enable_single_sign_out]
+            tgt.granted_service_tickets.each do |st|
+              send_logout_notification_for_service_ticket(st)
+              st.destroy
+            end
+          end
           tgt.destroy
         end
       end

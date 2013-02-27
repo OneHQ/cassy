@@ -27,4 +27,28 @@ describe Cassy::ServiceTicket do
     Cassy::ServiceTicket.validate("http://members.something.com", "ST-09876543210987654321").should == [nil, "Ticket 'ST-09876543210987654321' not recognized."]
   end
   
+  describe "#send_logout_notification_for_service_ticket(st)" do
+    
+    it "should send valid single sign out XML to the service URL" do
+      
+      service_stub = stub_request(:post, 'http://example.com')
+      
+      st = Cassy::ServiceTicket.new(
+        :ticket => 'ST-0123456789ABCDEFGHIJKLMNOPQRS',
+        :service => 'http://example.com',
+        :consumed => false,
+        :client_hostname => "http://sso.something.com"
+      )
+      
+      Cassy::ServiceTicket.send_logout_notification(st)
+
+      a_request(:post, 'example.com').with{ |req|
+        xml = CGI.parse(req.body)['logoutRequest'].first
+        Nokogiri::XML(xml).at_xpath('//SessionIndex').text.strip == st.ticket
+      }.should have_been_made
+      
+    end
+    
+  end
+  
 end

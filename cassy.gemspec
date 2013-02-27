@@ -17,4 +17,5 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'sqlite3'
   s.add_development_dependency 'launchy'
   s.add_development_dependency 'devise', '~> 1.3'
+  s.add_development_dependency 'webmock'
 end

@@ -1,7 +1,7 @@
 module Cassy
   class TicketGrantingTicket < ActiveRecord::Base
   	include Cassy::Ticket
-    set_table_name 'casserver_tgt'
+    self.table_name = 'casserver_tgt'
 
     serialize :extra_attributes
 
@@ -40,6 +40,17 @@ module Cassy
       tgt.client_hostname = hostname
       tgt.save!
       tgt
+    end
+    
+    def destroy_and_logout_all_service_tickets
+      if Cassy.config[:enable_single_sign_out]
+        granted_service_tickets.each do |st|
+          Cassy::ServiceTicket.send_logout_notification(st)
+        end
+        destroy
+      else
+        raise "Single Sign Out is not enabled for Cassy. If you want to enable it, add 'enable_single_sign_out: true' to the Cassy config file."
+      end
     end
       
   end

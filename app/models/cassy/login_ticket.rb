@@ -1,7 +1,7 @@
 module Cassy
   class LoginTicket < ActiveRecord::Base
   	include Cassy::Ticket
-    set_table_name 'casserver_lt'
+    self.table_name = 'casserver_lt'
     include Consumable
     
     def self.validate(ticket="invalid")

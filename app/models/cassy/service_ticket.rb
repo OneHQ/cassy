@@ -2,7 +2,7 @@ module Cassy
   class ServiceTicket < ActiveRecord::Base
 	include Cassy::Ticket
 
-    set_table_name 'casserver_st'
+    self.table_name = 'casserver_st'
 
     # Need to confirm the before_save function is actually needed. Seems that every
     # instance of this type (in 130000 rows) has the same value of "Cassy::ServiceTicket"
@@ -72,7 +72,7 @@ module Cassy
       rand = Cassy::Utils.random_string
 
       begin
-        response = Net::HTTP.post_form(uri, {'logoutRequest' => URI.escape(%{<samlp:LogoutRequest ID="#{rand}" Version="2.0" IssueInstant="#{time.rfc2822}">
+        response = Net::HTTP.post_form(uri, {'logoutRequest' => (%{<samlp:LogoutRequest ID="#{rand}" Version="2.0" IssueInstant="#{time.rfc2822}">
           <saml:NameID></saml:NameID>
           <samlp:SessionIndex>#{st.ticket}</samlp:SessionIndex>
           </samlp:LogoutRequest>})})

@@ -1,3 +1,4 @@
+require 'webmock/rspec'
 # Configure Rails Environment
 ENV["RAILS_ENV"] = "test"
 ENV["RUBYCAS_CONFIG_FILE"] = File.expand_path("default_config.yml", File.dirname(__FILE__))
