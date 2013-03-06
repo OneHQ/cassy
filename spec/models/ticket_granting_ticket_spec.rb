@@ -21,4 +21,22 @@ describe Cassy::TicketGrantingTicket do
     Cassy::TicketGrantingTicket.validate("TGT-09876543210987654321").should == [nil, "Ticket 'TGT-09876543210987654321' not recognized."]
   end
   
+  context "single sign out" do
+  
+    before do
+      @service_ticket = Cassy::ServiceTicket.create!(:granted_by_tgt_id => @ticket_granting_ticket, 
+        :service => "www.another.com", :ticket => "ST-1362563155rFE13971A3BCC04C6B5", :client_hostname => "another", :username => "1")
+      Cassy.config[:enable_single_sign_out] = true
+    end
+    
+    it "sends a logout notification for all granted service tickets before being destroyed" do
+      Cassy::ServiceTicket.should_receive(:send_logout_notification).with(@service_ticket)
+      @ticket_granting_ticket.destroy_and_logout_all_service_tickets
+      expect {
+        Cassy::TicketGrantingTicket.find(@ticket_granting_ticket.id)
+      }.to raise_error(ActiveRecord::RecordNotFound)
+    end
+  
+  end
+  
 end

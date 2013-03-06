@@ -80,7 +80,7 @@ module Cassy
           logger.info "Logout notification successfully posted to #{st.service.inspect}."
           return true
         else
-          logger.error "Service #{st.service.inspect} responed to logout notification with code '#{response.code}'!"
+          logger.error "Service #{st.service.inspect} responded to logout notification with code '#{response.code}'!"
           return false
         end
       rescue Exception => e

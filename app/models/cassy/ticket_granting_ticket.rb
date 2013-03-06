@@ -42,6 +42,7 @@ module Cassy
       tgt
     end
     
+    # If single_sign_out is enabled, sends a logout notification to each service before destroying the ticket
     def destroy_and_logout_all_service_tickets
       if Cassy.config[:enable_single_sign_out]
         granted_service_tickets.each do |st|
