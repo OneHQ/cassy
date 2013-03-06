@@ -48,12 +48,7 @@ module Cassy
 
       logger.debug("Logging in with username: #{@username}, lt: #{@lt}, service: #{@service}, auth: #{settings[:auth].inspect}")
       if cas_login
-        if @ticketing_service
-          redirect_to after_sign_in_path_for(@service_with_ticket)
-        else
-          flash.now[:notice] = "You have successfully logged in."
-          render :new
-        end
+        redirect_to after_sign_in_path_for(@service_with_ticket)
       else
         incorrect_credentials!
       end
@@ -136,7 +131,7 @@ module Cassy
       @service_ticket, @error = Cassy::ServiceTicket.validate(@service, @ticket)
       @extra_attributes = {}
       if @service_ticket
-        @username = ticketed_user(t)[settings[:cas_app_user_filed]]
+        @username = ticketed_user(@service_ticket).send(settings[:client_app_user_field])
 
         if @service_ticket.kind_of? Cassy::ProxyTicket
           @proxies << t.granted_by_pgt.service_ticket.service
