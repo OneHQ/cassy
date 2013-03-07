@@ -48,7 +48,12 @@ module Cassy
 
       logger.debug("Logging in with username: #{@username}, lt: #{@lt}, service: #{@service}, auth: #{settings[:auth].inspect}")
       if cas_login
-        redirect_to after_sign_in_path_for(@service_with_ticket)
+        if @service_with_ticket
+          redirect_to after_sign_in_path_for(@service_with_ticket)
+        else
+          flash.now[:notice] = "You have successfully logged in."
+          render :new        
+        end
       else
         incorrect_credentials!
       end
