@@ -1,11 +1,5 @@
 require 'spec_helper'
 
-VALID_USERNAME = 'spec_user'
-VALID_PASSWORD = 'spec_password'
-
-ATTACK_USERNAME = '%3E%22%27%3E%3Cscript%3Ealert%2826%29%3C%2Fscript%3E&password=%3E%22%27%3E%3Cscript%3Ealert%2826%29%3C%2Fscript%3E&lt=%3E%22%27%3E%3Cscript%3Ealert%2826%29%3C%2Fscript%3E&service=%3E%22%27%3E%3Cscript%3Ealert%2826%29%3C%2Fscript%3E'
-INVALID_PASSWORD = 'invalid_password'
-
 describe Cassy::Authenticators::Test do
 
   before do
@@ -23,7 +17,6 @@ describe Cassy::Authenticators::Test do
       fill_in 'Password', :with => VALID_PASSWORD
       click_button 'Login'
       page.should have_content("You have successfully logged in")
-
     end
 
     it "fails to log in with invalid password" do

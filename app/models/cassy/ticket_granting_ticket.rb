@@ -31,6 +31,9 @@ module Cassy
     # The optional 'extra_attributes' parameter takes a hash of additional attributes
     # that will be sent along with the username in the CAS response to subsequent
     # validation requests from clients.
+    #
+    # If the no_concurrent_session option is set to true, this will also find the previous ticket
+    # and call destroy_and_logout_all_service_tickets to remove the associated service_tickets.
     def self.generate(username, extra_attributes={}, hostname)
       # 3.6 (ticket granting cookie/ticket)
       tgt = Cassy::TicketGrantingTicket.new
@@ -39,6 +42,9 @@ module Cassy
       tgt.extra_attributes = extra_attributes
       tgt.client_hostname = hostname
       tgt.save!
+      if Cassy.config[:no_concurrent_sessions] == true && previous_ticket = where(:username => username.to_s).where("id <> ?",tgt.id).order("created_on DESC").first      
+        previous_ticket.destroy_and_logout_all_service_tickets
+      end
       tgt
     end
     

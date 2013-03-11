@@ -36,6 +36,36 @@ describe Cassy::TicketGrantingTicket do
         Cassy::TicketGrantingTicket.find(@ticket_granting_ticket.id)
       }.to raise_error(ActiveRecord::RecordNotFound)
     end
+    
+    context "logging in with a second session and 'no_concurrent_sessions' enabled" do
+      
+      before do
+        Cassy.config[:no_concurrent_sessions] = true
+        @ticket_granting_ticket = Cassy::TicketGrantingTicket.create!(:ticket => "TGT-981276451234567890", :username => "1", :client_hostname => "127.0.0.1")
+      end
+      
+      it "should send a request to terminate the old session" do
+        Cassy::TicketGrantingTicket.any_instance.should_receive(:destroy_and_logout_all_service_tickets)
+        @second_ticket_granting_ticket = Cassy::TicketGrantingTicket.generate("1", nil, "127.0.0.1")
+      end
+      
+    end
+    
+    context "logging in with a second session and 'no_concurrent_sessions' disabled" do
+      
+      before do
+        Cassy::TicketGrantingTicket.delete_all
+        Cassy.config[:no_concurrent_sessions] = nil
+        @ticket_granting_ticket = Cassy::TicketGrantingTicket.create!(:ticket => "TGT-981276451234567890", :username => "1", :client_hostname => "127.0.0.1")
+      end
+      
+      it "should have two sessions" do
+        Cassy::TicketGrantingTicket.any_instance.should_not_receive(:destroy_and_logout_all_service_tickets)
+        @second_ticket_granting_ticket = Cassy::TicketGrantingTicket.generate("1", nil, "127.0.0.1")
+        Cassy::TicketGrantingTicket.where(:username => "1").count.should == 2
+      end
+      
+    end
   
   end
   
