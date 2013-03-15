@@ -30,7 +30,7 @@ describe Cassy::TicketGrantingTicket do
     end
     
     it "sends a logout notification for all granted service tickets before being destroyed" do
-      Cassy::ServiceTicket.should_receive(:send_logout_notification).with(@service_ticket)
+      Cassy::ServiceTicket.any_instance.should_receive(:send_logout_notification)
       @ticket_granting_ticket.destroy_and_logout_all_service_tickets
       expect {
         Cassy::TicketGrantingTicket.find(@ticket_granting_ticket.id)

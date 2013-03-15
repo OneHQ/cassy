@@ -54,11 +54,11 @@ These configuration options are detailed here for your convenience. For specific
 * `service_list`: List of services that use this server to authenticate, separated by environment. 
 * `default_redirect_url`: If the requested service isn't in the service_list (or is blank) then tickets will be generated for the valid services then the user will be redirected to here. Needs to be specified per environment as per the sample below. The default_redirect_url needs to be on the same domain as (at least) one of the urls on the service_list.
 * `loosely_match_services`: If this is set to true, a request for the service http://www.something.com/something_else can be matched to the ticket for http://www.something.com.
-* `enable_single_sign_out`: If this is set to true, calling Cassy::ServiceTicket#send_logout_notification(service_ticket_hash) will send a request to the service telling it to clear the associated users session. Calling Cassy::TicketGrantingTicket.destroy_and_logout_all_service_tickets will send a session-terminating request to each service before destroying itself.
+* `enable_single_sign_out`: If this is set to true, calling send_logout_notification on a service ticket will send a request to the service telling it to clear the associated users session. Calling destroy_and_logout_all_service_tickets on a ticket granting ticket will send a session-terminating request to each service before destroying itself.
 * `no_concurrent_sessions`: (requires enable_single_sign_out to be true) If this is true, when someone logs in, a session-terminating request is sent to each service for any old service tickets related to the current user.
 
 
-For your viewing pleasure, here is a sample `cassy.yml` file:
+A sample `cassy.yml` file:
 
     maximum_unused_login_ticket_lifetime: 7200
     maximum_unused_service_ticket_lifetime: 7200

@@ -57,7 +57,7 @@ module Cassy
     def destroy_and_logout_all_service_tickets
       if Cassy.config[:enable_single_sign_out]
         granted_service_tickets.each do |st|
-          Cassy::ServiceTicket.send_logout_notification(st)
+          st.send_logout_notification
         end
         destroy
       else
