@@ -65,28 +65,32 @@ module Cassy
     #
     # This makes possible the "single sign-out" functionality added in CAS 3.1.
     # See http://www.ja-sig.org/wiki/display/CASUM/Single+Sign+Out
-    def self.send_logout_notification(st)
-      uri = URI.parse(st.service)
+    def send_logout_notification
+      uri = URI.parse(self.service)
       uri.path = '/' if uri.path.empty?
-      time = Time.now
-      rand = Cassy::Utils.random_string
-
       begin
-        response = Net::HTTP.post_form(uri, {'logoutRequest' => (%{<samlp:LogoutRequest ID="#{rand}" Version="2.0" IssueInstant="#{time.rfc2822}">
-          <saml:NameID></saml:NameID>
-          <samlp:SessionIndex>#{st.ticket}</samlp:SessionIndex>
-          </samlp:LogoutRequest>})})
+        response = Net::HTTP.post_form(uri, self.logout_notification_message)
         if response.kind_of? Net::HTTPSuccess
-          logger.info "Logout notification successfully posted to #{st.service.inspect}."
+          logger.debug "Logout notification successfully posted to #{self.service.inspect}."
           return true
         else
-          logger.error "Service #{st.service.inspect} responded to logout notification with code '#{response.code}'!"
+          logger.warn "Service #{self.service.inspect} responded to logout notification with code '#{response.code}'!"
           return false
         end
       rescue Exception => e
-        logger.error "Failed to send logout notification to service #{st.service.inspect} due to #{e}"
+        logger.warn "Failed to send logout notification to service #{self.service.inspect} due to #{e}"
         return false
       end
+    end
+    
+    # XML to be posted when using single sign out
+    def logout_notification_message
+      time = Time.now
+      rand = Cassy::Utils.random_string
+      {'logoutRequest' => (%{<samlp:LogoutRequest ID="#{rand}" Version="2.0" IssueInstant="#{time.rfc2822}">
+        <saml:NameID></saml:NameID>
+        <samlp:SessionIndex>#{self.ticket}</samlp:SessionIndex>
+        </samlp:LogoutRequest>})}       
     end
     
     def self.generate(service, username, tgt, hostname)

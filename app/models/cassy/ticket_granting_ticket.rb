@@ -42,10 +42,15 @@ module Cassy
       tgt.extra_attributes = extra_attributes
       tgt.client_hostname = hostname
       tgt.save!
-      if Cassy.config[:no_concurrent_sessions] == true && previous_ticket = where(:username => username.to_s).where("id <> ?",tgt.id).order("created_on DESC").first      
-        previous_ticket.destroy_and_logout_all_service_tickets
+      if Cassy.config[:no_concurrent_sessions] == true && tgt.previous_ticket
+        tgt.previous_ticket.destroy_and_logout_all_service_tickets
       end
       tgt
+    end
+    
+    # Returns the users previous ticket_granting_ticket
+    def previous_ticket
+      self.class.where(:username => username.to_s).where("id <> ?",self.id).order("created_on DESC").first
     end
     
     # If single_sign_out is enabled, sends a logout notification to each service before destroying the ticket

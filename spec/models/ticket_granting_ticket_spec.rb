@@ -66,6 +66,12 @@ describe Cassy::TicketGrantingTicket do
       end
       
     end
+    
+    it "returns the previous ticket for the username" do
+      Cassy.config[:enable_single_sign_out] = true # otherwise they will be deleted
+      @second_ticket_granting_ticket = Cassy::TicketGrantingTicket.generate("1", nil, "127.0.0.1")
+      @second_ticket_granting_ticket.previous_ticket.should == @ticket_granting_ticket
+    end
   
   end
   
