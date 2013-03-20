@@ -93,8 +93,13 @@ module Cassy
         </samlp:LogoutRequest>})}       
     end
     
+    # Try to find an existing service ticket for the given user and service
+    def self.find_or_generate(service, username, tgt, hostname)
+      st = tgt.granted_service_tickets.where(:service => service).where("created_on > ?", Time.now - Cassy.config[:maximum_session_lifetime]).order("created_on DESC").first
+      st || self.generate(service, username, tgt, hostname)
+    end
+    
     def self.generate(service, username, tgt, hostname)
-      # 3.1 (service ticket)
       st = ServiceTicket.new
       st.ticket = "ST-" + Cassy::Utils.random_string
       st.service = service

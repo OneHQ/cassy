@@ -9,9 +9,9 @@ module Cassy
       @renew = params['renew']
       @gateway = params['gateway'] == 'true' || params['gateway'] == '1'
       @hostname = env['HTTP_X_FORWARDED_FOR'] || env['REMOTE_HOST'] || env['REMOTE_ADDR']
-      tgt, tgt_error = Cassy::TicketGrantingTicket.validate(request.cookies['tgt'])
-      if tgt
-        flash.now[:notice] = "You are currently logged in as '%s'." % ticketed_user(tgt).send(settings[:username_field])
+      @tgt, tgt_error = Cassy::TicketGrantingTicket.validate(request.cookies['tgt'])
+      if @tgt
+        flash.now[:notice] = "You are currently logged in as '%s'." % ticketed_user(@tgt).send(settings[:username_field])
       end
 
       if params['redirection_loop_intercepted']
@@ -21,8 +21,8 @@ module Cassy
       if @service
         if @ticketed_user && cas_login
           redirect_to @service_with_ticket
-        elsif !@renew && tgt && !tgt_error
-          find_or_generate_service_tickets(ticket_username, tgt)
+        elsif !@renew && @tgt && !tgt_error
+          find_or_generate_service_tickets(ticket_username, @tgt)
           st = @service_tickets[@ticketing_service]
           redirect_to = service_uri_with_ticket(@ticketing_service, st)
         elsif @gateway

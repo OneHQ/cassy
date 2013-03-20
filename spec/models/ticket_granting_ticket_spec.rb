@@ -44,6 +44,11 @@ describe Cassy::TicketGrantingTicket do
         @ticket_granting_ticket = Cassy::TicketGrantingTicket.create!(:ticket => "TGT-981276451234567890", :username => "1", :client_hostname => "127.0.0.1")
       end
       
+      it "returns any ticket_granting_tickets that were created after the one stored in the session" do
+        @second_ticket_granting_ticket = Cassy::TicketGrantingTicket.generate("1", nil, "127.0.0.1")
+        @ticket_granting_ticket.not_the_latest_for_this_user?.should be_true
+      end
+      
       it "should send a request to terminate the old session" do
         Cassy::TicketGrantingTicket.any_instance.should_receive(:destroy_and_logout_all_service_tickets)
         @second_ticket_granting_ticket = Cassy::TicketGrantingTicket.generate("1", nil, "127.0.0.1")

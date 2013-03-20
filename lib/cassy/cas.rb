@@ -27,7 +27,7 @@ module Cassy
     def find_or_generate_service_tickets(username, tgt, hostname)
       @service_tickets={}
       valid_services.each do |service|
-        @service_tickets[service] = Cassy::ServiceTicket.generate(service, username, tgt, hostname)
+        @service_tickets[service] = Cassy::ServiceTicket.find_or_generate(service, username, tgt, hostname)
       end
     end
 
@@ -175,11 +175,10 @@ module Cassy
     
     def cas_login
       if valid_credentials?
-        # 3.6 (ticket-granting cookie)
-        tgt = Cassy::TicketGrantingTicket.generate(ticket_username, @extra_attributes, @hostname)
-        response.set_cookie('tgt', tgt.to_s)
+        @tgt||= Cassy::TicketGrantingTicket.generate(ticket_username, @extra_attributes, @hostname)
+        response.set_cookie('tgt', @tgt.to_s)
         if @ticketing_service
-          find_or_generate_service_tickets(ticket_username, tgt, @hostname)
+          find_or_generate_service_tickets(ticket_username, @tgt, @hostname)
           @st = @service_tickets[@ticketing_service]
           @service_with_ticket = (@service.blank? || @default_redirect_url) ? service_uri_with_ticket(@default_redirect_url, @st) : service_uri_with_ticket(@service, @st)
         end
@@ -201,7 +200,7 @@ module Cassy
                       :service  => @service,
                       :request  => @env
                     }
-      @user = authenticator.find_user(credentials) || authenticator.find_user(:username => session[:username])
+      @user = authenticator.find_user(credentials) || authenticator.find_user_from_ticket(@tgt)
       valid = ((@user == @ticketed_user) || authenticator.validate(credentials)) && !!@user
       if valid && @user
         authenticator.extra_attributes_to_extract.each do |attr|
@@ -224,7 +223,7 @@ module Cassy
     
     def ticketed_user(ticket)
       # Find the SSO's instance of the user
-      @ticketed_user ||= authenticator.find_user_from_ticket(ticket)
+      @ticketed_user ||= authenticator.find_user_from_ticket(ticket) unless !ticket
     end
 
     def authenticator
