@@ -37,6 +37,13 @@ describe Cassy::TicketGrantingTicket do
       }.to raise_error(ActiveRecord::RecordNotFound)
     end
     
+    it "raises an error if single sign out is not enabled" do
+      Cassy.config[:enable_single_sign_out] = false
+      expect {
+        @ticket_granting_ticket.destroy_and_logout_all_service_tickets
+      }.to raise_error("Single Sign Out is not enabled for Cassy. If you want to enable it, add 'enable_single_sign_out: true' to the Cassy config file.")
+    end
+    
     context "logging in with a second session and 'no_concurrent_sessions' enabled" do
       
       before do
