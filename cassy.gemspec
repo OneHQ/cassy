@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
   s.authors = ["ryan bigg","geoff@reinteractive.net"]
   s.description = "An engine that provides a CAS server to the application it's included within."
   s.files = Dir["lib/**/*"] + ["MIT-LICENSE", "Rakefile", "README.markdown"]
-  s.version = "2.0.2"
+  s.version = "2.0.3"
 
   s.add_dependency 'crypt-isaac'
   s.add_dependency 'rails', '>= 3.0.9'
@@ -17,4 +17,5 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'sqlite3'
   s.add_development_dependency 'launchy'
   s.add_development_dependency 'devise', '~> 1.3'
+  s.add_development_dependency 'webmock'
 end
