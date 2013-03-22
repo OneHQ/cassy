@@ -9,9 +9,9 @@ module Cassy
       @renew = params['renew']
       @gateway = params['gateway'] == 'true' || params['gateway'] == '1'
       @hostname = env['HTTP_X_FORWARDED_FOR'] || env['REMOTE_HOST'] || env['REMOTE_ADDR']
-      tgt, tgt_error = Cassy::TicketGrantingTicket.validate(request.cookies['tgt'])
-      if tgt
-        flash.now[:notice] = "You are currently logged in as '%s'." % ticketed_user(tgt).send(settings[:username_field])
+      @tgt, tgt_error = Cassy::TicketGrantingTicket.validate(request.cookies['tgt'])
+      if @tgt
+        flash.now[:notice] = "You are currently logged in as '%s'." % ticketed_user(@tgt).send(settings[:username_field])
       end
 
       if params['redirection_loop_intercepted']
@@ -21,8 +21,8 @@ module Cassy
       if @service
         if @ticketed_user && cas_login
           redirect_to @service_with_ticket
-        elsif !@renew && tgt && !tgt_error
-          find_or_generate_service_tickets(ticket_username, tgt)
+        elsif !@renew && @tgt && !tgt_error
+          find_or_generate_service_tickets(ticket_username, @tgt)
           st = @service_tickets[@ticketing_service]
           redirect_to = service_uri_with_ticket(@ticketing_service, st)
         elsif @gateway
@@ -48,7 +48,12 @@ module Cassy
 
       logger.debug("Logging in with username: #{@username}, lt: #{@lt}, service: #{@service}, auth: #{settings[:auth].inspect}")
       if cas_login
-        redirect_to after_sign_in_path_for(@service_with_ticket)
+        if @service_with_ticket
+          redirect_to after_sign_in_path_for(@service_with_ticket)
+        else
+          flash.now[:notice] = "You have successfully logged in."
+          render :new        
+        end
       else
         incorrect_credentials!
       end
@@ -75,6 +80,12 @@ module Cassy
             :include => :service_ticket)
           pgts.each do |pgt|
             pgt.destroy
+          end
+          if Cassy.config[:enable_single_sign_out]
+            tgt.granted_service_tickets.each do |st|
+              st.send_logout_notification
+              st.destroy
+            end
           end
           tgt.destroy
         end
