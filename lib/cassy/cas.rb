@@ -176,11 +176,13 @@ module Cassy
     def cas_login
       if valid_credentials?
         @tgt||= Cassy::TicketGrantingTicket.generate(ticket_username, @extra_attributes, @hostname)
-        response.set_cookie('tgt', @tgt.to_s)
-        if @ticketing_service
-          find_or_generate_service_tickets(ticket_username, @tgt, @hostname)
-          @st = @service_tickets[@ticketing_service]
-          @service_with_ticket = (@service.blank? || @default_redirect_url) ? service_uri_with_ticket(@default_redirect_url, @st) : service_uri_with_ticket(@service, @st)
+        session[:tgt] = @tgt.to_s
+        find_or_generate_service_tickets(ticket_username, @tgt, @hostname)
+        @st = @service_tickets[@ticketing_service]
+        if @st && @service
+          @service_with_ticket = service_uri_with_ticket(@service, @st)
+        else 
+          @service_with_ticket = @default_redirect_url
         end
         true
       else

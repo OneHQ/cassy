@@ -9,7 +9,7 @@ module Cassy
       @renew = params['renew']
       @gateway = params['gateway'] == 'true' || params['gateway'] == '1'
       @hostname = env['HTTP_X_FORWARDED_FOR'] || env['REMOTE_HOST'] || env['REMOTE_ADDR']
-      @tgt, tgt_error = Cassy::TicketGrantingTicket.validate(request.cookies['tgt'])
+      @tgt, tgt_error = Cassy::TicketGrantingTicket.validate(session[:tgt])
       if @tgt
         flash.now[:notice] = "You are currently logged in as '%s'." % ticketed_user(@tgt).send(settings[:username_field])
       end
@@ -52,8 +52,8 @@ module Cassy
           redirect_to after_sign_in_path_for(@service_with_ticket)
         else
           flash.now[:notice] = "You have successfully logged in."
-          render :new        
-        end
+          render :new
+        end        
       else
         incorrect_credentials!
       end
@@ -69,9 +69,9 @@ module Cassy
 
       @gateway = params['gateway'] == 'true' || params['gateway'] == '1'
 
-      tgt = Cassy::TicketGrantingTicket.find_by_ticket(request.cookies['tgt'])
+      tgt = Cassy::TicketGrantingTicket.find_by_ticket(session[:tgt])
 
-      response.delete_cookie 'tgt'
+      session[:tgt] = nil
       
       if tgt
         Cassy::TicketGrantingTicket.transaction do
