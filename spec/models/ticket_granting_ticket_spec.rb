@@ -24,7 +24,7 @@ describe Cassy::TicketGrantingTicket do
   context "single sign out" do
   
     before do
-      @service_ticket = Cassy::ServiceTicket.create!(:granted_by_tgt_id => @ticket_granting_ticket, 
+      @service_ticket = Cassy::ServiceTicket.create!(:granted_by_tgt_id => @ticket_granting_ticket.id, 
         :service => "www.another.com", :ticket => "ST-1362563155rFE13971A3BCC04C6B5", :client_hostname => "another", :username => "1")
       Cassy.config[:enable_single_sign_out] = true
     end

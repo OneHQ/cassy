@@ -162,10 +162,9 @@ module Cassy
       @service||= service
       @ticketing_service||= valid_services.detect{|s| s == @service } || 
         (settings[:loosely_match_services] == true && valid_services.detect{|s| base_service_url(s) == base_service_url(@service)})
-      if !@ticketing_service && settings[:default_redirect_url] && settings[:default_redirect_url][Rails.env]
-        # try to set it to the default_service
-        @ticketing_service = valid_services.detect{|s| base_service_url(s) == base_service_url(settings[:default_redirect_url][Rails.env])}
+      if !@ticketing_service && settings[:default_redirect_url]
         @default_redirect_url||= settings[:default_redirect_url][Rails.env]
+        @ticketing_service = @default_redirect_url
       end
       @username||= params[:username].try(:strip)
       @password||= params[:password]
@@ -180,7 +179,7 @@ module Cassy
         if @ticketing_service
           find_or_generate_service_tickets(ticket_username, @tgt, @hostname)
           @st = @service_tickets[@ticketing_service]
-          @service_with_ticket = (@service.blank? || @default_redirect_url) ? service_uri_with_ticket(@default_redirect_url, @st) : service_uri_with_ticket(@service, @st)
+          @service_with_ticket = @service && @st ? service_uri_with_ticket(@service, @st) : @default_redirect_url
         end
         true
       else
