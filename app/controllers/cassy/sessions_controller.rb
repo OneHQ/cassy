@@ -52,8 +52,8 @@ module Cassy
           redirect_to after_sign_in_path_for(@service_with_ticket)
         else
           flash.now[:notice] = "You have successfully logged in."
-          render :new        
-        end
+          render :new
+        end        
       else
         incorrect_credentials!
       end
