@@ -44,7 +44,7 @@ describe Cassy::ServiceTicket do
 
       a_request(:post, 'example.com').with{ |req|
         xml = CGI.parse(req.body)['logoutRequest'].first
-        Nokogiri::XML(xml).at_xpath('//SessionIndex').text.strip == st.ticket
+        Nokogiri::XML(xml).at_xpath('//samlp:SessionIndex').text.strip == st.ticket
       }.should have_been_made
       
     end
