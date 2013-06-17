@@ -73,6 +73,7 @@ module Cassy
       begin
         http = Net::HTTP.new(uri.host, uri.port)
         http.use_ssl = true if uri.scheme =='https'
+        req.add_field "Content-Type", "application/xml"
         http.start do |conn|
           response = conn.request(req)
           if response.kind_of? Net::HTTPSuccess
@@ -93,10 +94,7 @@ module Cassy
     def logout_notification_message
       time = Time.now
       rand = Cassy::Utils.random_string
-      {'logoutRequest' => (%{<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="#{rand}" Version="2.0" IssueInstant="#{time.rfc2822}">
-        <saml:NameID></saml:NameID>
-        <samlp:SessionIndex>#{self.ticket}</samlp:SessionIndex>
-        </samlp:LogoutRequest>})}       
+      {'logoutRequest' => %{<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="#{rand}" Version="2.0" IssueInstant="#{time.rfc2822}"><saml:NameID></saml:NameID><samlp:SessionIndex>#{self.ticket}</samlp:SessionIndex></samlp:LogoutRequest>}}
     end
     
     # Try to find an existing service ticket for the given user and service
