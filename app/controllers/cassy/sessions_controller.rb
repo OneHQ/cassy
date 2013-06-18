@@ -21,12 +21,14 @@ module Cassy
       if @service
         if @ticketed_user && cas_login
           redirect_to @service_with_ticket
+        elsif @existing_ticket_for_service
+          redirect_to logout_url
         elsif !@renew && @tgt && !tgt_error
           find_or_generate_service_tickets(ticket_username, @tgt)
           st = @service_tickets[@ticketing_service]
-          redirect_to = service_uri_with_ticket(@ticketing_service, st)
+          redirect_to service_uri_with_ticket(@ticketing_service, st)
         elsif @gateway
-          redirect_to = @gateway
+          redirect_to @gateway
         end
       elsif @gateway
         flash.now[:error] = "The server cannot fulfill this gateway request because no service parameter was given."
