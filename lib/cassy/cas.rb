@@ -175,13 +175,17 @@ module Cassy
     def cas_login
       if valid_credentials?
         @tgt||= Cassy::TicketGrantingTicket.generate(ticket_username, @extra_attributes, @hostname)
+        @existing_ticket_for_service = @tgt.granted_service_tickets.where(:service => @service).where("created_on > ?", Time.now - Cassy.config[:maximum_session_lifetime]).where("consumed IS NOT NULL").first
         response.set_cookie('tgt', @tgt.to_s)
         if @ticketing_service
           find_or_generate_service_tickets(ticket_username, @tgt, @hostname)
           @st = @service_tickets[@ticketing_service]
           @service_with_ticket = @service && @st ? service_uri_with_ticket(@service, @st) : @default_redirect_url
         end
-        true
+        # if there is an existing ticket for the service that redirected to cassy,
+        # then the session isn't valid on the serviced app and we don't want to redirect to it.
+        # Returning false here will fail the cas_login and the controller will see the instance variable and redirect to logout.
+        !@existing_ticket_for_service
       else
         false
       end
