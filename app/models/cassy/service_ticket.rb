@@ -68,14 +68,21 @@ module Cassy
     def send_logout_notification
       uri = URI.parse(self.service)
       uri.path = '/' if uri.path.empty?
+      req = Net::HTTP::Post.new(uri.path)
+      req.set_form_data(self.logout_notification_message)
       begin
-        response = Net::HTTP.post_form(uri, self.logout_notification_message)
-        if response.kind_of? Net::HTTPSuccess
-          logger.debug "Logout notification successfully posted to #{self.service.inspect}."
-          return true
-        else
-          logger.warn "Service #{self.service.inspect} responded to logout notification with code '#{response.code}'!"
-          return false
+        http = Net::HTTP.new(uri.host, uri.port)
+        http.use_ssl = true if uri.scheme =='https'
+        req.add_field "Content-Type", "application/xml"
+        http.start do |conn|
+          response = conn.request(req)
+          if response.kind_of? Net::HTTPSuccess
+            logger.debug "Logout notification successfully posted to #{self.service.inspect}."
+            return true
+          else
+            logger.warn "Service #{self.service.inspect} responded to logout notification with code '#{response.code}'!"
+            return false
+          end
         end
       rescue Exception => e
         logger.warn "Failed to send logout notification to service #{self.service.inspect} due to #{e}"
@@ -87,10 +94,7 @@ module Cassy
     def logout_notification_message
       time = Time.now
       rand = Cassy::Utils.random_string
-      {'logoutRequest' => (%{<samlp:LogoutRequest ID="#{rand}" Version="2.0" IssueInstant="#{time.rfc2822}">
-        <saml:NameID></saml:NameID>
-        <samlp:SessionIndex>#{self.ticket}</samlp:SessionIndex>
-        </samlp:LogoutRequest>})}       
+      {'logoutRequest' => %{<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="#{rand}" Version="2.0" IssueInstant="#{time.rfc2822}"><saml:NameID></saml:NameID><samlp:SessionIndex>#{self.ticket}</samlp:SessionIndex></samlp:LogoutRequest>}}
     end
     
     # Try to find an existing service ticket for the given user and service
