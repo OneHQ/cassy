@@ -11,11 +11,11 @@ Gem::Specification.new do |s|
   s.add_dependency 'crypt-isaac'
   s.add_dependency 'rails', '>= 3.0.9'
 
-  s.add_development_dependency 'rspec-rails', '~> 2.6.0'
+  s.add_development_dependency 'rspec-rails', '~> 2.7.0'
   s.add_development_dependency 'capybara', '~> 1.0'
   s.add_development_dependency 'database_cleaner'
   s.add_development_dependency 'sqlite3'
   s.add_development_dependency 'launchy'
-  s.add_development_dependency 'devise', '~> 1.3'
+  s.add_development_dependency 'devise', '~> 3.2.4'
   s.add_development_dependency 'webmock'
 end
