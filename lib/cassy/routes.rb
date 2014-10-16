@@ -4,7 +4,6 @@ module ActionDispatch::Routing
       options[:controllers] ||= HashWithIndifferentAccess.new
       options[:controllers][:sessions] ||= "cassy/sessions"
       scope(:path => "cas") do
-        root :to => "#{options[:controllers][:sessions]}#new"
         get 'login', :to => "#{options[:controllers][:sessions]}#new"
         post 'login', :to => "#{options[:controllers][:sessions]}#create"
         

@@ -9,4 +9,3 @@ end
 gem 'rails', railsversion
 gemspec
 
-gem "ruby-debug19"
