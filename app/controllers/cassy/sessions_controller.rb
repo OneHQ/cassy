@@ -77,9 +77,10 @@ module Cassy
       
       if tgt
         Cassy::TicketGrantingTicket.transaction do
-          pgts = Cassy::ProxyGrantingTicket.find(:all,
-            :conditions => [ActiveRecord::Base.connection.quote_table_name(Cassy::ServiceTicket.table_name)+".username = ?", tgt.username],
-            :include => :service_ticket)
+          stname = ActiveRecord::Base.connection.quote_table_name(Cassy::ServiceTicket.table_name)
+          pgts = Cassy::ProxyGrantingTicket.
+              joins(:service_ticket).
+              where(stname + ".username = ?", tgt.username)
           pgts.each do |pgt|
             pgt.destroy
           end
