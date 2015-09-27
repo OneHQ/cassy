@@ -201,7 +201,7 @@ module Cassy
       credentials = { :username => @username,
                       :password => @password,
                       :service  => @service,
-                      :request  => @env
+                      :request  => request
                     }
       @user = authenticator.find_user(credentials) || authenticator.find_user_from_ticket(@tgt)
       valid = ((@user == @ticketed_user) || authenticator.validate(credentials)) && !!@user
