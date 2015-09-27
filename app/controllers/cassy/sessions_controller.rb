@@ -77,10 +77,9 @@ module Cassy
       
       if tgt
         Cassy::TicketGrantingTicket.transaction do
-          pgts = Cassy::ProxyGrantingTicket.find(:all,
-            :conditions => [ActiveRecord::Base.connection.quote_table_name(Cassy::ServiceTicket.table_name)+".username = ?", tgt.username],
-            :include => :service_ticket)
-          pgts.each do |pgt|
+          pgts = Cassy::ProxyGrantingTicket.where(Cassy::ServiceTicket.table_name => { :username => tgt.username }).
+            includes(:service_ticket)
+          pgts.find_each do |pgt|
             pgt.destroy
           end
           if Cassy.config[:enable_single_sign_out]
