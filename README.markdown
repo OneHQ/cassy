@@ -15,7 +15,7 @@ Put this line in your project's `Gemfile`:
 Create a new initializer (probably called `config/initializers/cassy.rb`) and point cassy at the correct configuration file of your application:
 
     Cassy::Engine.config.config_file = Rails.root + "config/cassy.yml"
-    
+
 Create this configuration file at `config/cassy.yml`. Fill it with these values:
 
     # Times are in seconds.
@@ -31,7 +31,7 @@ Next, you will need to tell Cassy to load its routes in your application which y
 
     Rails.application.routes.draw do
       cassy
-      
+
       # your routes go here
     end
 
@@ -51,11 +51,12 @@ These configuration options are detailed here for your convenience. For specific
 * `username_field`: Defines the field on the users table which is used for the lookup for the username. Defaults to " username".
 * `username_label`: Allows for the "Username" label on the sign in page to be given a different value. Helpful if you want to call it "Email" or "User Name" instead.
 * `client_app_user_field`: Defines the field name for the username on the *client* application side.
-* `service_list`: List of services that use this server to authenticate, separated by environment. 
+* `service_list`: List of services that use this server to authenticate, separated by environment.
 * `default_redirect_url`: If the requested service isn't in the service_list (or is blank) then tickets will be generated for the valid services then the user will be redirected to here. Needs to be specified per environment as per the sample below. The default_redirect_url needs to be on the same domain as (at least) one of the urls on the service_list.
 * `loosely_match_services`: If this is set to true, a request for the service http://www.something.com/something_else can be matched to the ticket for http://www.something.com.
 * `enable_single_sign_out`: If this is set to true, calling send_logout_notification on a service ticket will send a request to the service telling it to clear the associated users session. Calling destroy_and_logout_all_service_tickets on a ticket granting ticket will send a session-terminating request to each service before destroying itself.
 * `no_concurrent_sessions`: (requires enable_single_sign_out to be true) If this is true, when someone logs in, a session-terminating request is sent to each service for any old service tickets related to the current user.
+* `concurrent_session_types`:  If no_concurrent_sessions is true, concurrent_session_types can be specified so that a user can have concurrent sessions on different device types.  If enabled, override `session_type` in `SessionsController` to return the session_type (any string).  
 
 
 A sample `cassy.yml` file:
@@ -79,6 +80,8 @@ A sample `cassy.yml` file:
     loosely_match_services: true
     authenticator:
       class: Cassy::Authenticators::Devise
+    no_concurrent_sessions: true
+    concurrent_session_types: [:mobile, :desktop]
     extra_attributes:
       - user_id
       - user_username
@@ -98,4 +101,3 @@ By doing this, it will point at the `SessionsController` rather than the default
         # custom behaviour goes here
         super
       end
-        
