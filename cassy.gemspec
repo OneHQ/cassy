@@ -10,6 +10,9 @@ Gem::Specification.new do |s|
 
   s.add_dependency 'crypt-isaac', '>= 1.0.0'
   s.add_dependency 'rails', '>= 3.0.9'
+  s.add_dependency 'grape', '~> 0.14'
+  s.add_dependency 'grape-entity', '~> 0.5'
+
 
   s.add_development_dependency 'rspec-rails', '~> 2.7.0'
   s.add_development_dependency 'capybara', '~> 1.0'
