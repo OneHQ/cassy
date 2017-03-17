@@ -12,7 +12,8 @@ module Cassy
         return if ticket.nil?
         key  = Cassy.config[:client_app_user_field] || Cassy.config[:username_field] || "email"
         method = "find_by_#{key}"
-        User.send(method, ticket.username)
+        username = Cassy.config[:concurrent_session_types] ? Cassy.config[:concurrent_session_types].each{ |cst| break ticket.username.rpartition("-#{cst}").first if ticket.username.match("-#{cst}") } : ticket.username
+        User.send(method, username)
       end
 
       def self.validate(credentials)
