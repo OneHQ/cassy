@@ -1,39 +1,45 @@
 # Cassy
 
-This project is designed to be a Rails 3 engine that uses a large portion of the code from the [rubycas-server][https://github.com/gunark/rubycas-server] project. Certain portions of this code belong to the rubycas-server project owners.
+This project is designed to be a Rails engine that uses a large portion of the code from the [rubycas-server][https://github.com/gunark/rubycas-server] project. Certain portions of this code belong to the rubycas-server project owners.
 
 ## Installation
 
-This engine currently only works with Rails 3. To have it work with the application you must do three things:
+This engine currently only works with Rails 3 and above. To have it work with the application you must do four things:
 
-**Install as a gem**
+1. Put this line in your project's `Gemfile`:
 
-Put this line in your project's `Gemfile`:
+```
+gem 'cassy'
+```
 
-    gem 'cassy'
+2. Create a configuration file at `config/cassy.yml` and fill it with these values:
 
-Create a new initializer (probably called `config/initializers/cassy.rb`) and point cassy at the correct configuration file of your application:
+```
+# Times are in seconds.
+maximum_unused_login_ticket_lifetime: 300
+maximum_unused_service_ticket_lifetime: 300
 
-    Cassy::Engine.config.config_file = Rails.root + "config/cassy.yml"
+authenticator:
+  class: Cassy::Authenticators::Devise
+```
 
-Create this configuration file at `config/cassy.yml`. Fill it with these values:
+The first two keys are the time-to-expiry for the login and service tickets respectively. The class for the authentication can be any constant which responds to a `validates` method. Only Devise authentication is supported at the moment.
 
-    # Times are in seconds.
-    maximum_unused_login_ticket_lifetime: 300
-    maximum_unused_service_ticket_lifetime: 300
+3. Create a new initializer (probably called `config/initializers/cassy.rb`) and point cassy at the configuration file for your application:
 
-    authenticator:
-      class: Cassy::Authenticators::Devise
+```
+Cassy::Engine.config.config_file = Rails.root + "config/cassy.yml"
+```
 
-The first two keys are the time-to-expiry for the login and service tickets respectively. The class for the authentication can be any constant which responds to a `validates` method. By default, only Devise authentication is supported at the moment.
+4. Tell Cassy to load its routes in your application by calling `cassy` in `config/routes.rb`:
 
-Next, you will need to tell Cassy to load its routes in your application which you can do by calling `cassy` in `config/routes.rb`:
+```
+Rails.application.routes.draw do
+  cassy
 
-    Rails.application.routes.draw do
-      cassy
-
-      # your routes go here
-    end
+  # your routes go here
+end
+```
 
 Boom, done. Now this application will act as a CAS server.
 
@@ -58,33 +64,34 @@ These configuration options are detailed here for your convenience. For specific
 * `no_concurrent_sessions`: (requires enable_single_sign_out to be true) If this is true, when someone logs in, a session-terminating request is sent to each service for any old service tickets related to the current user.
 * `concurrent_session_types`:  If no_concurrent_sessions is true, concurrent_session_types can be specified so that a user can have concurrent sessions on different device types.  If enabled, override `session_type` in `SessionsController` to return the session_type (any string).  
 
-
 A sample `cassy.yml` file:
 
-    maximum_unused_login_ticket_lifetime: 7200
-    maximum_unused_service_ticket_lifetime: 7200
-    maximum_session_lifetime: 7200
-      username_field: username
-      client_app_user_field: id
-    service_list:
-      production:
-      - https://agencieshq.com/users/service
-      - https://administratorshq.agencieshq.com/users/service
-      development:
-      - http://localhost:3000/users/service
-      - http://localhost:3001/users/service
-      - http://localhost:3002/users/service
-    default_redirect_url:
-      development: http://localhost:3000
-      production: http://www.something.com
-    loosely_match_services: true
-    authenticator:
-      class: Cassy::Authenticators::Devise
-    no_concurrent_sessions: true
-    concurrent_session_types: [:mobile, :desktop]
-    extra_attributes:
-      - user_id
-      - user_username
+```
+maximum_unused_login_ticket_lifetime: 7200
+maximum_unused_service_ticket_lifetime: 7200
+maximum_session_lifetime: 7200
+  username_field: username
+  client_app_user_field: id
+service_list:
+  production:
+  - https://agencieshq.com/users/service
+  - https://administratorshq.agencieshq.com/users/service
+  development:
+  - http://localhost:3000/users/service
+  - http://localhost:3001/users/service
+  - http://localhost:3002/users/service
+default_redirect_url:
+  development: http://localhost:3000
+  production: http://www.something.com
+loosely_match_services: true
+authenticator:
+  class: Cassy::Authenticators::Devise
+no_concurrent_sessions: true
+concurrent_session_types: [:mobile, :desktop]
+extra_attributes:
+  - user_id
+  - user_username
+```
 
 ## Customization
 
@@ -92,12 +99,58 @@ A sample `cassy.yml` file:
 
 In Cassy, it is possible to override the controller which is used for authentication. To do this, the controller can be configured in `config/routes.rb`:
 
-    cassy :controllers => "sessions"
+```
+cassy :controllers => "sessions"
+```
 
 By doing this, it will point at the `SessionsController` rather than the default of `Cassy::SessionsController`. This controller then should inherit from `Cassy::SessionsController` to inherit the original behaviour and will need to point to the views of Cassy:
 
-    class SessionsController < Cassy::SessionsController
-      def new
-        # custom behaviour goes here
-        super
-      end
+```
+class SessionsController < Cassy::SessionsController
+  def new
+    # custom behaviour goes here
+    super
+  end
+end
+```
+
+## Contributing
+
+### Versioning
+
+We use [Semantic Versioning](http://semver.org/) for our open source dependencies, and a modified version of Semantic Versioning in our internal dependencies.
+
+#### Open Source
+
+`MAJOR.MINOR.PATCH`
+
+**1** MAJOR version when you make incompatible API changes
+
+**2** MINOR version when you add functionality in a backwards-compatible manner, and
+
+**3** PATCH version when you make backwards-compatible bug fixes.
+
+#### Internal
+
+**1** MAJOR version when major changes are made.
+
+**2** MINOR version when you make incompatible API changes
+
+**3** PATCH version when you make any backwards-compatible change.
+
+### Releasing
+
+#### Prerequisites
+
+- Gemfury CLI installed
+- Gemfury Credentials from 1Password
+
+#### Instructions
+
+**1.** Update `lib/{gem_name}/version.rb` according to the versioning rules above.
+
+**2.** Create a Pull Request with the version change to the repository.
+
+**3.** Once the pull request is merged, run `gem build .{gem_name}.gemspec`
+
+**4.** Run `fury push {gem_name}_{version}.gem`.
