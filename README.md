@@ -151,6 +151,6 @@ We use [Semantic Versioning](http://semver.org/) for our open source dependencie
 
 **2.** Create a Pull Request with the version change to the repository.
 
-**3.** Once the pull request is merged, run `gem build .{gem_name}.gemspec`
+**3.** Once the pull request is merged, run `gem build {gem_name}.gemspec`
 
 **4.** Run `fury push {gem_name}_{version}.gem`.
