@@ -62,7 +62,7 @@ These configuration options are detailed here for your convenience. For specific
 * `loosely_match_services`: If this is set to true, a request for the service http://www.something.com/something_else can be matched to the ticket for http://www.something.com.
 * `enable_single_sign_out`: If this is set to true, calling send_logout_notification on a service ticket will send a request to the service telling it to clear the associated users session. Calling destroy_and_logout_all_service_tickets on a ticket granting ticket will send a session-terminating request to each service before destroying itself.
 * `no_concurrent_sessions`: (requires enable_single_sign_out to be true) If this is true, when someone logs in, a session-terminating request is sent to each service for any old service tickets related to the current user.
-* `concurrent_session_types`:  If no_concurrent_sessions is true, concurrent_session_types can be specified so that a user can have concurrent sessions on different device types.  If enabled, override `session_type` in `SessionsController` to return the session_type (any string).  
+* `concurrent_session_types`:  If no_concurrent_sessions is true, concurrent_session_types can be specified so that a user can have concurrent sessions on different device types.  If enabled, override `session_type` in `SessionsController` to return the session_type (any string).
 
 A sample `cassy.yml` file:
 
@@ -151,6 +151,6 @@ We use [Semantic Versioning](http://semver.org/) for our open source dependencie
 
 **2.** Create a Pull Request with the version change to the repository.
 
-**3.** Once the pull request is merged, run `gem build .{gem_name}.gemspec`
+**3.** Once the pull request is merged, run `gem build {gem_name}.gemspec`
 
 **4.** Run `fury push {gem_name}_{version}.gem`.
