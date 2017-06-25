@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
   s.authors = ["ryan bigg","geoff@reinteractive.net"]
   s.description = "An engine that provides a CAS server to the application it's included within."
   s.files = Dir["lib/**/*"] + ["MIT-LICENSE", "Rakefile", "README.md"]
-  s.version = "2.1"
+  s.version = "2.1.1"
 
   s.add_dependency 'crypt-isaac', '>= 1.0.0'
   s.add_dependency 'rails', '>= 3.0.9'
