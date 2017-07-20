@@ -9,8 +9,8 @@ module Cassy
       :class_name => 'Cassy::ServiceTicket',
       :foreign_key => :granted_by_tgt_id,
       :dependent => :destroy
-      
-      
+
+
     def self.validate(ticket)
       if ticket.nil?
         [nil, "No ticket provided."]
@@ -28,7 +28,7 @@ module Cassy
         [nil, "Ticket '#{ticket}' not recognized."]
       end
     end
-    
+
     # Creates a TicketGrantingTicket for the given username. This is done when the user logs in
     # for the first time to establish their SSO session (after their credentials have been validated).
     #
@@ -38,7 +38,7 @@ module Cassy
     #
     # If the no_concurrent_session option is set to true, this will also find the previous ticket
     # and call destroy_and_logout_all_service_tickets to remove the associated service_tickets.
-    def self.generate(username, extra_attributes={}, hostname)
+    def self.generate(username, extra_attributes={}, hostname, destroy_old: true)
       # 3.6 (ticket granting cookie/ticket)
       tgt = Cassy::TicketGrantingTicket.new
       tgt.ticket = "TGC-" + Cassy::Utils.random_string
@@ -46,22 +46,22 @@ module Cassy
       tgt.extra_attributes = extra_attributes
       tgt.client_hostname = hostname
       tgt.save!
-      if Cassy.config[:enable_single_sign_out] && Cassy.config[:no_concurrent_sessions] == true && tgt.previous_ticket
+      if  destroy_old && Cassy.config[:enable_single_sign_out] && Cassy.config[:no_concurrent_sessions] == true && tgt.previous_ticket
         tgt.previous_ticket.destroy_and_logout_all_service_tickets
       end
       tgt
     end
-    
+
     # Returns the users previous ticket_granting_ticket
     def previous_ticket
       Cassy::TicketGrantingTicket.where(:username => username.to_s).where("id <> ?",self.id).where("created_on > ?", Time.now - Cassy.config[:maximum_session_lifetime]).order("created_on DESC").first
     end
-    
+
     # Returns true if the ticket is not the most recent ticket granting ticket for that username
     def not_the_latest_for_this_user?
       Cassy::TicketGrantingTicket.where(:username => username).where("created_on > ? AND id <> ?",created_on,self.id).any?
     end
-    
+
     # If enable_single_sign_out is true, sends a logout notification to each service before destroying the ticket
     def destroy_and_logout_all_service_tickets
       if Cassy.config[:enable_single_sign_out]
@@ -73,6 +73,6 @@ module Cassy
         raise "Single Sign Out is not enabled for Cassy. If you want to enable it, add 'enable_single_sign_out: true' to the Cassy config file."
       end
     end
-      
+
   end
 end

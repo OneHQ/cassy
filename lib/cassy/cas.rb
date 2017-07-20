@@ -9,6 +9,75 @@ require 'cassy/utils'
 module Cassy
   module CAS
 
+    # Validate the users credentials, either by username and password, or by
+    # ticket (ticket granting ticket cookie)
+    def self.validate_user(username: nil, password: nil, ticket: nil)
+      if username && password
+        # user is logging in
+        user = authenticator.find_user(username: username, password: password)
+        # validate the user
+        user if authenticator.validate(username: username, password: password)
+      elsif ticket
+        # user is already logged in, so check the ticket
+        authenticator.find_user_from_ticket(ticket)
+      end
+    end
+
+    # Checks is a user is logged in for the given session time. "logged in" means
+    # that the user has an active ticket granting ticket.
+    def self.logged_in?(user:, session_type: nil)
+      # If there is a TicketGrantingTicket within the maximum_session_lifetime,
+      # then the user is currently logged in somewhere else.
+      !!Cassy::TicketGrantingTicket.where(username: ticket_username(user: user, session_type: session_type))
+        .where("created_on > ?", Time.now - Cassy.config[:maximum_session_lifetime])
+        .order("created_on DESC")
+        .first
+    end
+
+    # Log in the user to the SSO server. This does NOT create tickets to log
+    # in to other serverice.
+    def self.login(user: , session_type: nil, service: nil, hostname: nil)
+      username = ticket_username(user: user, session_type: session_type)
+      extra_attributes = extra_attributes(user: user)
+      Cassy::TicketGrantingTicket.generate(username, extra_attributes, hostname, destroy_old: false)
+    end
+
+    # Ticket username is a combination of the field used to sync with other apps
+    # (usually id or username) and the session type. Example: "117-api", "117-desktop".
+    def self.ticket_username(user: , session_type: )
+      username = user.public_send(Cassy.config[:client_app_user_field])
+      [username.to_s, session_type].compact.join("-")
+    end
+
+
+    def self.extra_attributes(user: )
+      authenticator.extra_attributes_to_extract.map do |attr|
+        [attr, user.send(attr)]
+      end.to_h
+    end
+
+    def self.service_uri_with_ticket(ticket)
+      raise ArgumentError, "Second argument must be a ServiceTicket!" unless ticket.kind_of? Cassy::ServiceTicket
+
+      # This will choke with a URI::InvalidURIError if service URI is not properly URI-escaped...
+      # This exception is handled further upstream (i.e. in the controller).
+      service_uri = URI.parse(ticket.service)
+      if ticket.service.include? "?"
+        if service_uri.query.empty?
+          query_separator = ""
+        else
+          query_separator = "&"
+        end
+      else
+        query_separator = "?"
+      end
+
+      service_with_ticket = ticket.service + query_separator + "ticket=" + ticket.ticket
+      service_with_ticket
+    end
+
+
+    ####### Old #######
     def settings
       Cassy.config
     end
@@ -233,6 +302,10 @@ module Cassy
     end
 
     def authenticator
+      Cassy::CAS.authenticator
+    end
+
+    def self.authenticator
       unless @authenticator
         auth_settings = Cassy.config["authenticator"]
         @authenticator ||= auth_settings["class"].constantize

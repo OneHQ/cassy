@@ -1,8 +1,10 @@
 module Cassy
   class ServiceTicket < ActiveRecord::Base
-	include Cassy::Ticket
+  	include Cassy::Ticket
 
     self.table_name = 'casserver_st'
+
+    scope :active, -> { where("created_on > ?", Time.now - Cassy.config[:maximum_session_lifetime]).where.not(consumed: nil) }
 
     # Need to confirm the before_save function is actually needed. Seems that every
     # instance of this type (in 130000 rows) has the same value of "Cassy::ServiceTicket"
@@ -19,7 +21,7 @@ module Cassy
 
     belongs_to :granted_by_tgt, :class_name => 'Cassy::TicketGrantingTicket', :foreign_key => :granted_by_tgt_id
     has_one :proxy_granting_ticket, :foreign_key => :created_by_st_id
-    
+
     def self.validate(service, ticket, allow_proxy_tickets = false)
       logger.debug "Validating service ticket '#{ticket}' for service '#{service}'"
 
@@ -49,7 +51,7 @@ module Cassy
         [nil, "Ticket '#{ticket}' not recognized."]
       end
     end
-    
+
 
     def matches_service?(service)
       if Cassy.config[:loosely_match_services] == true
@@ -58,7 +60,7 @@ module Cassy
         Cassy::CAS.clean_service_url(self.service) == Cassy::CAS.clean_service_url(service)
       end
     end
-    
+
     # Takes an existing ServiceTicket object (presumably pulled from the database)
     # and sends a POST with logout information to the service that the ticket
     # was generated for.
@@ -89,20 +91,24 @@ module Cassy
         return false
       end
     end
-    
+
     # XML to be posted when using single sign out
     def logout_notification_message
       time = Time.now
       rand = Cassy::Utils.random_string
       {'logoutRequest' => %{<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="#{rand}" Version="2.0" IssueInstant="#{time.rfc2822}"><saml:NameID></saml:NameID><samlp:SessionIndex>#{self.ticket}</samlp:SessionIndex></samlp:LogoutRequest>}}
     end
-    
+
     # Try to find an existing service ticket for the given user and service
     def self.find_or_generate(service, username, tgt, hostname)
-      st = tgt.granted_service_tickets.where(:service => service).where("created_on > ?", Time.now - Cassy.config[:maximum_session_lifetime]).order("created_on DESC").first
+      st = tgt.granted_service_tickets.where(:service => service).active.order("created_on DESC").first
       st || self.generate(service, username, tgt, hostname)
     end
-    
+
+    def self.generate_from_ticket(ticket: , service: )
+      find_or_generate(service, ticket.username, ticket, ticket.client_hostname)
+    end
+
     def self.generate(service, username, tgt, hostname)
       st = ServiceTicket.new
       st.ticket = "ST-" + Cassy::Utils.random_string
@@ -115,6 +121,6 @@ module Cassy
         " for user '#{st.username}' at '#{st.client_hostname}'")
       st
     end
-    
+
   end
 end
