@@ -4,7 +4,7 @@ module Cassy
 
     self.table_name = 'casserver_st'
 
-    scope :active, -> { where("created_on > ?", Time.now - Cassy.config[:maximum_session_lifetime]).where.not(consumed: nil) }
+    scope :active, -> { where("created_on > ?", Time.now - Cassy.config[:maximum_session_lifetime]).where(consumed: nil) }
 
     # Need to confirm the before_save function is actually needed. Seems that every
     # instance of this type (in 130000 rows) has the same value of "Cassy::ServiceTicket"
