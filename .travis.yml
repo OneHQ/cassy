@@ -1,8 +1,0 @@
-language: ruby
-rvm:
-  - 1.9.3
-env:
-  - RAILS_VERSION=3.0.9
-  - RAILS_VERSION=3.0.19
-  - RAILS_VERSION=3.1.10
-  - RAILS_VERSION=3.2.11
