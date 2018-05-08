@@ -1,0 +1,24 @@
+common: &common
+  adapter: postgresql
+  encoding: utf8
+  host: <%= ENV["DBHOST"] || "127.0.0.1" %>
+  port: <%= ENV["DBPORT"] || "5432" %>
+  database: <%= ENV["DBNAME"] || "cassy" %>
+  username: <%= ENV["DBUSER"] || "postgres" %>
+  password: <%= ENV["DBPASSWORD"] || "" %>
+  pool: 5
+  reconnect: true
+  timeout: 5000
+
+development:
+  <<: *common
+
+test:
+  <<: *common
+
+staging:
+  <<: *common
+
+production:
+  <<: *common
+  pool: 10

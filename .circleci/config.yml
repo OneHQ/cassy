@@ -1,0 +1,133 @@
+# Ruby CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-ruby/ for more details
+#
+defaults: &defaults
+  working_directory: ~/repo
+  docker:
+    - image: circleci/ruby:2.3.6-stretch-node
+      environment:
+        - DBHOST: localhost
+        - DBNAME: cassy_test
+        - DBPASSWORD: Vdm9omJt8Z3MCV4N
+        - DBUSER: test_user
+        - RACK_ENV: test
+        - RAILS_ENV: test
+    - image: circleci/postgres:10.3-alpine-ram
+      environment:
+        - POSTGRES_DB: cassy_test
+        - POSTGRES_USER: test_user
+        - POSTGRES_PASSWORD: Vdm9omJt8Z3MCV4N
+
+version: 2
+jobs:
+  run_specs:
+    <<: *defaults
+
+    steps:
+      - run:
+          name: Set up environment
+          command: |
+            sudo apt-get update && sudo apt-get install -y apt-transport-https apt-utils
+
+      - checkout
+
+      - restore_cache:
+          keys:
+          - cassy-dependencies-v1-{{ checksum "cassy.gemspec" }}
+          - cassy-dependencies-v1-
+
+      - run:
+          name: Install dependencies
+          command: |
+            curl -sS https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+            echo "deb http://apt.postgresql.org/pub/repos/apt/ stretch-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+            sudo apt-get update && sudo apt-get install postgresql-client-10
+            bundle check --path=./vendor/bundle || bundle install --path=./vendor/bundle --jobs=4 --retry=3
+
+      - save_cache:
+          key: cassy-dependencies-v1-{{ checksum "cassy.gemspec" }}
+          paths:
+            - ./vendor/bundle
+
+      - run:
+          name: Set up database
+          command: |
+            cp spec/dummy/config/database.docker.yml spec/dummy/config/database.yml
+
+      - run:
+          name: Run tests
+          command: |
+            mkdir /tmp/test-results
+            TEST_FILES="$(circleci tests glob "spec/**/*_spec.rb" | circleci tests split --split-by=timings)"
+            bundle exec rspec --format progress --format RspecJunitFormatter --out /tmp/test-results/rspec.xml $TEST_FILES
+
+      - store_test_results:
+          path: /tmp/test-results
+
+      - store_artifacts:
+          path: /tmp/test-results
+          destination: test-results
+
+  build_gem:
+    <<: *defaults
+
+    steps:
+      - run:
+          name: Set up environment
+          command: |
+            sudo apt-get update && sudo apt-get install -y apt-transport-https apt-utils
+
+      - checkout
+
+      - restore_cache:
+          keys:
+          - cassy-dependencies-v1-{{ checksum "cassy.gemspec" }}
+          - cassy-dependencies-v1-
+
+      - run:
+          name: Install dependencies
+          command: |
+            gem install gemfury
+            bundle check --path=./vendor/bundle || bundle install --path=./vendor/bundle --jobs=4 --retry=3
+
+      - save_cache:
+          key: cassy-dependencies-v1-{{ checksum "cassy.gemspec" }}
+          paths:
+            - ./vendor/bundle
+
+      - run:
+          name: Build gem
+          command: |
+            gem build cassy.gemspec
+
+      - run:
+          name: Push gem
+          command: |
+            if [[ "${CIRCLE_PROJECT_USERNAME}" == "OneHQ" && "${CIRCLE_BRANCH}" == "master" && -n "${GEMFURY_USERNAME}" && -n "${GEMFURY_PASSWORD}" ]]; then
+              echo -e "machine api.fury.io\n  login ${GEMFURY_USERNAME}\n  password ${GEMFURY_PASSWORD}" >> ~/.netrc
+              chmod 600 ~/.netrc
+              version=$(ruby -e 'load "lib/cassy/version.rb"; puts HasBadges::VERSION')
+              grep -q "${version}" <(fury versions cassy) || EXIT_CODE=$? && true
+              if [[ $EXIT_CODE == 1 ]]; then
+                fury push cassy-${version}.gem
+                git tag ${version}
+                git push --tags
+
+                [[ -n "$SLACK_TOKEN" ]] && curl -s -d "cassy ($version) released." "https://onehq.slack.com/services/hooks/slackbot?token=${SLACK_TOKEN}&channel=%23machines"
+              fi
+            fi
+
+workflows:
+  version: 2
+  build-deploy:
+    jobs:
+      - run_specs
+      - build_gem:
+          requires:
+            - run_specs
+          filters:
+            branches:
+              only:
+                - master
+                - staging
