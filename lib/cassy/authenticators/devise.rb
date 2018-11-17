@@ -19,7 +19,7 @@ module Cassy
       def self.validate(credentials)
         user = find_user(credentials)
         # Did we find a user, are they active? and is their password valid?
-        user && user.active_for_authentication? && user.valid_password?(credentials[:password])
+        user && user.active_for_authentication? && user.valid_for_authentication? { user.valid_password?(credentials[:password]) }
       end
     end
   end
