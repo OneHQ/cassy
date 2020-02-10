@@ -3,9 +3,9 @@ module Cassy
   	include Cassy::Ticket
     self.table_name = 'casserver_lt'
     include Consumable
-    
-    def self.validate(ticket="invalid")
-      ticket = LoginTicket.find_by_ticket(ticket)
+
+    def self.validate_ticket(ticket="invalid")
+      ticket = LoginTicket.find_by(ticket: ticket)
       if ticket
         if ticket.consumed?
           {:valid => false, :error => "The login ticket you provided has already been used up. Please try logging in again."}
@@ -18,6 +18,6 @@ module Cassy
         {:valid => false, :error => "The login ticket you provided is invalid. There may be a problem with the authentication system."}
       end
     end
-        
+
   end
 end

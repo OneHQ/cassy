@@ -5,11 +5,11 @@ module Cassy
 
     def new
       detect_ticketing_service(params[:service])
-      
+
       @renew = params['renew']
       @gateway = params['gateway'] == 'true' || params['gateway'] == '1'
-      @hostname = env['HTTP_X_FORWARDED_FOR'] || env['REMOTE_HOST'] || env['REMOTE_ADDR']
-      @tgt, tgt_error = Cassy::TicketGrantingTicket.validate(request.cookies['tgt'])
+      @hostname = request.env['HTTP_X_FORWARDED_FOR'] || request.env['REMOTE_HOST'] || request.env['REMOTE_ADDR']
+      @tgt, tgt_error = Cassy::TicketGrantingTicket.validate_ticket(request.cookies['tgt'])
       if @tgt
         flash.now[:notice] = "You are currently logged in as '%s'." % ticketed_user(@tgt).send(settings[:username_field])
       end
@@ -17,7 +17,7 @@ module Cassy
       if params['redirection_loop_intercepted']
         flash.now[:error] = "The client and server are unable to negotiate authentication. Please try logging in again later."
       end
-      
+
       if @service
         if @ticketed_user && cas_login
           redirect_to @service_with_ticket
@@ -36,12 +36,12 @@ module Cassy
 
       @lt = generate_login_ticket.ticket
     end
-    
+
     def create
       @lt = generate_login_ticket.ticket # in case the login isn't successful, another ticket needs to be generated for the next attempt at login
       detect_ticketing_service(params[:service])
-      @hostname = env['HTTP_X_FORWARDED_FOR'] || env['REMOTE_HOST'] || env['REMOTE_ADDR']
-      consume_ticket = Cassy::LoginTicket.validate(@lt)
+      @hostname = request.env['HTTP_X_FORWARDED_FOR'] || request.env['REMOTE_HOST'] || request.env['REMOTE_ADDR']
+      consume_ticket = Cassy::LoginTicket.validate_ticket(@lt)
       if !consume_ticket[:valid]
         flash.now[:error] = consume_ticket[:error]
         @lt = generate_login_ticket.ticket
@@ -55,12 +55,12 @@ module Cassy
         else
           flash.now[:notice] = "You have successfully logged in."
           render :new
-        end        
+        end
       else
         incorrect_credentials!
       end
     end
-    
+
     def destroy
       # The behaviour here is somewhat non-standard. Rather than showing just a blank
       # "logout" page, we take the user back to the login page with a "you have been logged out"
@@ -71,10 +71,10 @@ module Cassy
 
       @gateway = params['gateway'] == 'true' || params['gateway'] == '1'
 
-      tgt = Cassy::TicketGrantingTicket.find_by_ticket(request.cookies['tgt'])
+      tgt = Cassy::TicketGrantingTicket.find_by(ticket: request.cookies['tgt'])
 
       response.delete_cookie 'tgt'
-      
+
       if tgt
         Cassy::TicketGrantingTicket.transaction do
           pgts = Cassy::ProxyGrantingTicket.where(Cassy::ServiceTicket.table_name => { :username => tgt.username }).
@@ -91,7 +91,7 @@ module Cassy
           tgt.destroy
         end
       end
-       
+
       flash[:notice] = "You have successfully logged out."
       @lt = generate_login_ticket
 
@@ -101,10 +101,10 @@ module Cassy
         redirect_to :action => :new, :service => @service
       end
     end
-    
+
     def service_validate
       # takes a params[:service] and a params[:ticket] and validates them
-      
+
       # required
       @service = clean_service_url(params['service'])
       @ticket = params['ticket']
@@ -112,7 +112,7 @@ module Cassy
       @renew = params['renew']
       @pgt_url = params['pgtUrl']
 
-      @service_ticket, @error = Cassy::ServiceTicket.validate(@service, @ticket)
+      @service_ticket, @error = Cassy::ServiceTicket.validate_ticket(@service, @ticket)
       if @service_ticket
         @username = ticketed_user(@service_ticket).send(settings[:client_app_user_field])
         if @pgt_url
@@ -123,7 +123,7 @@ module Cassy
       end
       render :proxy_validate, :layout => false, :status => @service_ticket ? 200 : 422
     end
-    
+
     def proxy_validate
       # required
       @service = clean_service_url(params['service'])
@@ -134,7 +134,7 @@ module Cassy
 
       @proxies = []
 
-      @service_ticket, @error = Cassy::ServiceTicket.validate(@service, @ticket)
+      @service_ticket, @error = Cassy::ServiceTicket.validate_ticket(@service, @ticket)
       @extra_attributes = {}
       if @service_ticket
         @username = ticketed_user(@service_ticket).send(settings[:client_app_user_field])
@@ -152,11 +152,11 @@ module Cassy
       end
 
       render :proxy_validate, :layout => false, :status => @service_ticket ? 200 : 422
-      
+
     end
-    
+
     private
-    
+
     def incorrect_credentials!
       @lt = generate_login_ticket.ticket
       flash.now[:error] = "Incorrect username or password."

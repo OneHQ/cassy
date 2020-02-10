@@ -7,12 +7,12 @@ module Cassy
       :class_name => 'Cassy::ProxyTicket',
       :foreign_key => :granted_by_pgt_id
   end
-  
-  def self.validate(ticket)
+
+  def self.validate_ticket(ticket)
     if ticket.nil?
       error = Error.new(:INVALID_REQUEST, "pgt parameter was missing in the request.")
       logger.warn("#{error.code} - #{error.message}")
-    elsif pgt = ProxyGrantingTicket.find_by_ticket(ticket)
+    elsif pgt = ProxyGrantingTicket.find_by(ticket: ticket)
       if pgt.service_ticket
         logger.info("Proxy granting ticket '#{ticket}' belonging to user '#{pgt.service_ticket.username}' successfully validated.")
       else
@@ -26,5 +26,5 @@ module Cassy
 
     [pgt, error]
   end
-  
+
 end

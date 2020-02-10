@@ -4,9 +4,9 @@ module Cassy
       :class_name => 'Cassy::ProxyGrantingTicket',
       :foreign_key => :granted_by_pgt_id
   end
-  
-  def validate(service, ticket)
-    pt, error = Cassy::ServiceTicket.validate(service, ticket, true)
+
+  def validate_ticket(service, ticket)
+    pt, error = Cassy::ServiceTicket.validate_ticket(service, ticket, true)
 
     if pt.kind_of?(Cassy::ProxyTicket) && !error
       if not pt.granted_by_pgt
@@ -19,5 +19,5 @@ module Cassy
 
     [pt, error]
   end
-  
+
 end

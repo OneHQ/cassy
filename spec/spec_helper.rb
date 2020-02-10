@@ -3,7 +3,7 @@ require 'webmock/rspec'
 ENV["RAILS_ENV"] = "test"
 ENV["RUBYCAS_CONFIG_FILE"] = File.expand_path("default_config.yml", File.dirname(__FILE__))
 
-require File.expand_path("../dummy/config/environment.rb",  __FILE__)
+require File.expand_path("../dummy/config/application.rb",  __FILE__)
 
 Rails.backtrace_cleaner.remove_silencers!
 

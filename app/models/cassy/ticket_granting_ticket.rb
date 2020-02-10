@@ -9,12 +9,12 @@ module Cassy
       :class_name => 'Cassy::ServiceTicket',
       :foreign_key => :granted_by_tgt_id,
       :dependent => :destroy
-      
-      
-    def self.validate(ticket)
+
+
+    def self.validate_ticket(ticket)
       if ticket.nil?
         [nil, "No ticket provided."]
-      elsif tgt = TicketGrantingTicket.find_by_ticket(ticket)
+      elsif tgt = TicketGrantingTicket.find_by(ticket: ticket)
         if Cassy.config[:maximum_session_lifetime] && Time.now - Cassy.config[:maximum_session_lifetime] > tgt.created_on
   	      tgt.destroy
   	      [nil, "Ticket TGT-12345678901234567890 has expired. Please log in again."]
@@ -28,7 +28,7 @@ module Cassy
         [nil, "Ticket '#{ticket}' not recognized."]
       end
     end
-    
+
     # Creates a TicketGrantingTicket for the given username. This is done when the user logs in
     # for the first time to establish their SSO session (after their credentials have been validated).
     #
@@ -51,17 +51,17 @@ module Cassy
       end
       tgt
     end
-    
+
     # Returns the users previous ticket_granting_ticket
     def previous_ticket
       Cassy::TicketGrantingTicket.where(:username => username.to_s).where("id <> ?",self.id).where("created_on > ?", Time.now - Cassy.config[:maximum_session_lifetime]).order("created_on DESC").first
     end
-    
+
     # Returns true if the ticket is not the most recent ticket granting ticket for that username
     def not_the_latest_for_this_user?
       Cassy::TicketGrantingTicket.where(:username => username).where("created_on > ? AND id <> ?",created_on,self.id).any?
     end
-    
+
     # If enable_single_sign_out is true, sends a logout notification to each service before destroying the ticket
     def destroy_and_logout_all_service_tickets
       if Cassy.config[:enable_single_sign_out]
@@ -73,6 +73,6 @@ module Cassy
         raise "Single Sign Out is not enabled for Cassy. If you want to enable it, add 'enable_single_sign_out: true' to the Cassy config file."
       end
     end
-      
+
   end
 end

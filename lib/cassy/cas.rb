@@ -8,7 +8,7 @@ require 'cassy/utils'
 # the Cassy::Controllers module.
 module Cassy
   module CAS
-    
+
     def settings
       Cassy.config
     end
@@ -18,7 +18,7 @@ module Cassy
       lt = Cassy::LoginTicket.new
       lt.ticket = "LT-" + Cassy::Utils.random_string
 
-      lt.client_hostname = env['HTTP_X_FORWARDED_FOR'] || env['REMOTE_HOST'] || env['REMOTE_ADDR']
+      lt.client_hostname = request.env['HTTP_X_FORWARDED_FOR'] || request.env['REMOTE_HOST'] || request.env['REMOTE_ADDR']
       lt.save!
       logger.debug("Generated login ticket '#{lt.ticket}' for client at '#{lt.client_hostname}'")
       lt
@@ -43,7 +43,7 @@ module Cassy
       pt.username = pgt.service_ticket.username
       pt.granted_by_pgt_id = pgt.id
       pt.granted_by_tgt_id = pgt.service_ticket.granted_by_tgt.id
-      pt.client_hostname = @env['HTTP_X_FORWARDED_FOR'] || @env['REMOTE_HOST'] || @env['REMOTE_ADDR']
+      pt.client_hostname = request.env['HTTP_X_FORWARDED_FOR'] || request.env['REMOTE_HOST'] || request.env['REMOTE_ADDR']
       pt.save!
       logger.debug("Generated proxy ticket '#{pt.ticket}' for target service '#{pt.service}'" +
         " for user '#{pt.username}' at '#{pt.client_hostname}' using proxy-granting" +
@@ -66,12 +66,12 @@ module Cassy
       https.start do |conn|
         path = uri.path.empty? ? '/' : uri.path
         path += '?' + uri.query unless (uri.query.nil? || uri.query.empty?)
-      
+
         pgt = ProxyGrantingTicket.new
         pgt.ticket = "PGT-" + Cassy::Utils.random_string(60)
         pgt.iou = "PGTIOU-" + Cassy::Utils.random_string(57)
         pgt.service_ticket_id = st.id
-        pgt.client_hostname = @env['HTTP_X_FORWARDED_FOR'] || @env['REMOTE_HOST'] || @env['REMOTE_ADDR']
+        pgt.client_hostname = request.env['HTTP_X_FORWARDED_FOR'] || request.env['REMOTE_HOST'] || request.env['REMOTE_ADDR']
 
         # FIXME: The CAS protocol spec says to use 'pgt' as the parameter, but in practice
         #         the JA-SIG and Yale server implementations use pgtId. We'll go with the
@@ -81,7 +81,7 @@ module Cassy
         response = conn.request_get(path)
         # TODO: follow redirects... 2.5.4 says that redirects MAY be followed
         # NOTE: The following response codes are valid according to the JA-SIG implementation even without following redirects
-      
+
         if %w(200 202 301 302 304).include?(response.code)
           # 3.4 (proxy-granting ticket IOU)
           pgt.save!
@@ -143,7 +143,7 @@ module Cassy
     module_function :clean_service_url
 
     def base_service_url(full_service_url)
-      # strips a url back to the domain part only 
+      # strips a url back to the domain part only
       # so that a service ticket can work for all urls on a given domain
       # eg http://www.something.com/something_else
       # is stripped back to
@@ -154,13 +154,13 @@ module Cassy
       match && match[0]
     end
     module_function :base_service_url
-    
+
     def detect_ticketing_service(service)
       # try to find the service in the valid_services list
       # if loosely_matched_services is true, try to match the base url of the service to one in the valid_services list
       # if still no luck, check if there is a default_redirect_url that we can use
       @service||= service
-      @ticketing_service||= valid_services.detect{|s| s == @service } || 
+      @ticketing_service||= valid_services.detect{|s| s == @service } ||
         (settings[:loosely_match_services] == true && valid_services.detect{|s| base_service_url(s) == base_service_url(@service)})
       if !@ticketing_service && settings[:default_redirect_url]
         @default_redirect_url||= settings[:default_redirect_url][Rails.env]
@@ -171,7 +171,7 @@ module Cassy
       @lt||= params['lt']
     end
     module_function :detect_ticketing_service
-    
+
     def cas_login
       if valid_credentials?
         @tgt||= Cassy::TicketGrantingTicket.generate(ticket_username, @extra_attributes, @hostname)
@@ -191,7 +191,7 @@ module Cassy
       end
     end
     module_function :cas_login
-    
+
     # Initializes authenticator, returns true / false depending on if user credentials are accurate
     def valid_credentials?
       detect_ticketing_service(params[:service])
@@ -213,7 +213,7 @@ module Cassy
       return valid
     end
     module_function :valid_credentials?
-    
+
     protected
 
     def ticket_username
@@ -223,7 +223,7 @@ module Cassy
       @cas_client_username = user.send(settings["client_app_user_field"]) if settings["client_app_user_field"].present? && !!user
       @cas_client_username || @username
     end
-    
+
     def ticketed_user(ticket)
       # Find the SSO's instance of the user
       @ticketed_user ||= authenticator.find_user_from_ticket(ticket) unless !ticket
